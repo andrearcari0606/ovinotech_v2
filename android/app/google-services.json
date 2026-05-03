@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "193019278794",
+    "project_id": "ovinotechv2",
+    "storage_bucket": "ovinotechv2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:193019278794:android:78434472534d5830668b33",
+        "android_client_info": {
+          "package_name": "com.example.ovinotech_v2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAMCU5Y0Z070lXoAVEA1MBJI5zOEAYNUc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

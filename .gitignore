@@ -1,0 +1,22 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+
+# Android
+/android/.gradle/
+/android/app/build/
+
+# iOS
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/
+
+# VS Code / Visual Studio
+.vscode/
+.vs/
+
+# Outros
+.metadata
+*.log
