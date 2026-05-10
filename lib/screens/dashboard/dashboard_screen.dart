@@ -6,6 +6,7 @@ import '../../core/services/hive_service.dart';
 import '../../services/analise_service.dart';
 import '../../services/pesagem_service.dart'; // 🔥 NOVO
 import '../manejos/manejos_screen.dart';
+import '../../utils/premium_guard.dart';
 
 import '../animal/cadastro_animal_screen.dart';
 import 'animal_list_screen.dart';
@@ -280,13 +281,15 @@ class DashboardScreen extends StatelessWidget {
                   subtitle: const Text("Ver todos os animais"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RankingScreen(),
-                      ),
-                    );
-                  },
+                     PremiumGuard.check(context, () {
+                     Navigator.push(
+                        context,
+                     MaterialPageRoute(
+                     builder: (_) => const RankingScreen(),
+                          ),
+                        );
+                      });
+                     },
                 ),
               ),
 
