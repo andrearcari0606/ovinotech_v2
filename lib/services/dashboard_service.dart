@@ -1,152 +1,239 @@
 import '../models/animal.dart';
 import '../models/analise_resultado.dart';
+
 import 'analise_service.dart';
+import 'pesagem_service.dart';
 
 class DashboardResumo {
-  final int total;
-  final int verde;
-  final int amarelo;
-  final int vermelho;
-
+  final int totalAnimais;
+  final int alertas;
   final double pesoMedio;
 
   DashboardResumo({
-    required this.total,
-    required this.verde,
-    required this.amarelo,
-    required this.vermelho,
+    required this.totalAnimais,
+    required this.alertas,
     required this.pesoMedio,
-  });
-}
-
-class DashboardAlerta {
-  final String mensagem;
-  final String nivel;
-  final String tipo;
-
-  DashboardAlerta({
-    required this.mensagem,
-    required this.nivel,
-    required this.tipo,
   });
 }
 
 class DashboardService {
 
-  /// 🔥 RESUMO (CORRIGIDO)
-  static DashboardResumo gerarResumo(List<Animal> animais) {
-    int verde = 0;
-    int amarelo = 0;
-    int vermelho = 0;
+  /// 🔥 CACHE DAS ANÁLISES
+  static final Map<String, AnaliseResultado>
+      _cacheAnalises = {};
+
+  /// 🔥 CACHE GMD
+  static final Map<String, double>
+      _cacheGmd = {};
+
+  /// 🔥 PEGA ANÁLISE DO CACHE
+  static AnaliseResultado getAnalise(
+    Animal animal,
+  ) {
+
+    final id = animal.id ?? '';
+
+    /// 🔥 RETORNA CACHE
+    if (_cacheAnalises.containsKey(id)) {
+      return _cacheAnalises[id]!;
+    }
+
+    /// 🔥 CALCULA
+    final resultado =
+        AnaliseService.analisarAnimalCompleto(
+      animal,
+    );
+
+    /// 🔥 SALVA CACHE
+    _cacheAnalises[id] = resultado;
+
+    return resultado;
+  }
+
+  /// 🔥 LIMPA CACHE
+  static void limparCache() {
+
+    _cacheAnalises.clear();
+
+    _cacheGmd.clear();
+  }
+
+  /// 🔥 RESUMO DASHBOARD
+  static DashboardResumo gerarResumo(
+    List<Animal> animais,
+  ) {
+
+    int alertas = 0;
 
     double somaPeso = 0;
 
-    for (var animal in animais) {
+    int comPeso = 0;
+
+    for (final animal in animais) {
+
+      /// 🔥 USA CACHE
       final resultado =
-          AnaliseService.analisarAnimalCompleto(animal);
+          getAnalise(animal);
 
-      if (resultado.status == "verde") verde++;
-      if (resultado.status == "amarelo") amarelo++;
-      if (resultado.status == "vermelho") vermelho++;
+      if (resultado.problemas.isNotEmpty) {
+        alertas++;
+      }
 
-      somaPeso += animal.peso;
-    }
+      /// 🔥 PEGA ÚLTIMA PESAGEM
+      final listaPesos =
+          PesagemService()
+              .listarPorAnimal(
+        animal.id ?? '',
+      );
 
-    return DashboardResumo(
-      total: animais.length,
-      verde: verde,
-      amarelo: amarelo,
-      vermelho: vermelho,
-      pesoMedio: animais.isEmpty ? 0 : somaPeso / animais.length,
-    );
-  }
+      double peso = 0;
 
-  /// 🔥 ALERTAS (CORRIGIDO)
-  static List<DashboardAlerta> gerarAlertas(List<Animal> animais) {
-    int verminoseCritica = 0;
-    int verminoseAtencao = 0;
-    int eccBaixo = 0;
+      if (listaPesos.isNotEmpty) {
 
-    for (var animal in animais) {
-      final resultado =
-          AnaliseService.analisarAnimalCompleto(animal);
+        listaPesos.sort(
+          (a, b) =>
+              b.data.compareTo(a.data),
+        );
 
-      for (var problema in resultado.problemas) {
-        if (problema.mensagem.contains("Forte indicativo")) {
-          verminoseCritica++;
-        } else if (problema.mensagem.contains("Atenção para verminose")) {
-          verminoseAtencao++;
-        } else if (problema.mensagem.contains("ECC")) {
-          eccBaixo++;
-        }
+        peso = listaPesos.first.peso;
+      }
+
+      if (peso > 0) {
+
+        somaPeso += peso;
+
+        comPeso++;
       }
     }
 
-    List<DashboardAlerta> alertas = [];
+    return DashboardResumo(
+      totalAnimais: animais.length,
 
-    /// 🔴 CRÍTICO
-    if (verminoseCritica > 0) {
-      alertas.add(DashboardAlerta(
-        mensagem: "🚨 $verminoseCritica animais com alta carga parasitária",
-        nivel: "critico",
-        tipo: "verminose_critica",
-      ));
-    }
+      alertas: alertas,
 
-    /// 🟡 ATENÇÃO
-    if (verminoseAtencao > 0) {
-      alertas.add(DashboardAlerta(
-        mensagem: "⚠️ $verminoseAtencao animais em observação para verminose",
-        nivel: "alerta",
-        tipo: "verminose_atencao",
-      ));
-    }
-
-    if (eccBaixo > 0) {
-      alertas.add(DashboardAlerta(
-        mensagem: "⚠️ $eccBaixo animais com condição corporal baixa",
-        nivel: "alerta",
-        tipo: "ecc_baixo",
-      ));
-    }
-
-    /// 🟢 INFO
-    if (alertas.isEmpty) {
-      alertas.add(DashboardAlerta(
-        mensagem: "✅ Nenhum problema identificado no rebanho",
-        nivel: "info",
-        tipo: "info",
-      ));
-    }
-
-    return alertas;
+      pesoMedio:
+          comPeso > 0
+              ? somaPeso / comPeso
+              : 0,
+    );
   }
 
-  /// 🔥 MELHORES (AGORA POR SCORE REAL)
-  static List<Animal> melhoresAnimais(List<Animal> animais) {
-    final lista = [...animais];
+  /// 🔥 GMD COM CACHE
+  static double calcularGMD(
+    String animalId,
+  ) {
 
-    lista.sort((a, b) {
-      final ra = AnaliseService.analisarAnimalCompleto(a);
-      final rb = AnaliseService.analisarAnimalCompleto(b);
+    /// 🔥 RETORNA CACHE
+    if (_cacheGmd.containsKey(animalId)) {
+      return _cacheGmd[animalId]!;
+    }
 
-      return rb.score.compareTo(ra.score);
-    });
+    final lista =
+        PesagemService().listarPorAnimal(
+      animalId,
+    );
 
-    return lista.take(3).toList();
+    if (lista.length < 2) {
+      return 0;
+    }
+
+    lista.sort(
+      (a, b) => a.data.compareTo(b.data),
+    );
+
+    final primeiro = lista.first;
+
+    final ultimo = lista.last;
+
+    final diffPeso =
+        ultimo.peso - primeiro.peso;
+
+    final dias =
+        ultimo.data
+            .difference(primeiro.data)
+            .inDays;
+
+    if (dias <= 0) {
+      return 0;
+    }
+
+    final gmd = diffPeso / dias;
+
+    /// 🔥 SALVA CACHE
+    _cacheGmd[animalId] = gmd;
+
+    return gmd;
   }
 
-  /// 🔥 PIORES (CORRIGIDO)
-  static List<Animal> pioresAnimais(List<Animal> animais) {
-    final lista = [...animais];
+  /// 🔥 TOP 3
+  static List<Animal> topAnimais(
+    List<Animal> animais,
+  ) {
 
-    lista.sort((a, b) {
-      final ra = AnaliseService.analisarAnimalCompleto(a);
-      final rb = AnaliseService.analisarAnimalCompleto(b);
+    final ranking =
+        animais.map((animal) {
 
-      return ra.score.compareTo(rb.score);
-    });
+      final gmd =
+          calcularGMD(
+        animal.id ?? '',
+      );
 
-    return lista.take(3).toList();
+      return {
+        'animal': animal,
+        'gmd': gmd,
+      };
+
+    }).toList();
+
+    ranking.sort(
+      (a, b) =>
+          (b['gmd'] as double)
+              .compareTo(
+        a['gmd'] as double,
+      ),
+    );
+
+    return ranking
+        .take(3)
+        .map(
+          (e) => e['animal'] as Animal,
+        )
+        .toList();
+  }
+
+  /// 🔥 PIORES ANIMAIS
+  static List<Animal> pioresAnimais(
+    List<Animal> animais,
+  ) {
+
+    final ranking =
+        animais.map((animal) {
+
+      final resultado =
+          getAnalise(animal);
+
+      return {
+        'animal': animal,
+
+        'score':
+            resultado.problemas.length,
+      };
+
+    }).toList();
+
+    ranking.sort(
+      (a, b) =>
+          (b['score'] as int)
+              .compareTo(
+        a['score'] as int,
+      ),
+    );
+
+    return ranking
+        .take(3)
+        .map(
+          (e) => e['animal'] as Animal,
+        )
+        .toList();
   }
 }

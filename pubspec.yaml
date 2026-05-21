@@ -32,7 +32,6 @@ dependencies:
 
   # 📊 GRÁFICOS
   fl_chart: ^0.66.0
- 
 
 dev_dependencies:
   flutter_test:
@@ -49,3 +48,4 @@ flutter:
 
   assets:
     - assets/ecc/
+    - assets/images/

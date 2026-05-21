@@ -1,387 +1,369 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../models/animal.dart';
+
 import '../../core/services/hive_service.dart';
-import '../../services/analise_service.dart';
-import '../../services/pesagem_service.dart'; // 🔥 NOVO
-import '../manejos/manejos_screen.dart';
+
+import '../../services/dashboard_service.dart';
+
 import '../../utils/premium_guard.dart';
 
 import '../animal/cadastro_animal_screen.dart';
+
 import 'animal_list_screen.dart';
 import 'ranking_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+import 'widgets/top_animais_widget.dart';
+import 'widgets/resumo_rebanho_widget.dart';
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
-  // 🔥 FUNÇÃO GMD
-  double calcularGMD(String animalId) {
-    final lista = PesagemService().listarPorAnimal(animalId);
+  @override
+  State<DashboardScreen> createState() =>
+      _DashboardScreenState();
+}
 
-    if (lista.length < 2) return 0;
+class _DashboardScreenState
+    extends State<DashboardScreen> {
 
-    lista.sort((a, b) => a.data.compareTo(b.data));
+  late Future<Map<String, dynamic>>
+      dashboardFuture;
 
-    final primeiro = lista.first;
-    final ultimo = lista.last;
+  @override
+  void initState() {
+    super.initState();
 
-    final diffPeso = ultimo.peso - primeiro.peso;
-    final dias = ultimo.data.difference(primeiro.data).inDays;
+    dashboardFuture =
+        carregarDashboard();
+  }
 
-    if (dias <= 0) return 0;
+  Future<Map<String, dynamic>>
+      carregarDashboard() async {
 
-    return diffPeso / dias;
+    final animais =
+        HiveService.getAnimaisAtivos();
+
+    final resumo =
+        DashboardService.gerarResumo(
+      animais,
+    );
+
+    int saudavel = 0;
+    int atencao = 0;
+    int critico = 0;
+
+    for (final animal in animais) {
+
+      final r =
+          DashboardService.getAnalise(
+        animal,
+      );
+
+      if (r.status == "vermelho") {
+
+        critico++;
+
+      } else if (r.status ==
+          "amarelo") {
+
+        atencao++;
+
+      } else {
+
+        saudavel++;
+      }
+    }
+
+    String statusGeral =
+        "Saudável";
+
+    if (critico > 0) {
+
+      statusGeral =
+          "Requer atenção";
+
+    } else if (atencao >
+        saudavel) {
+
+      statusGeral =
+          "Em observação";
+    }
+
+    return {
+      'animais': animais,
+      'saudavel': saudavel,
+      'atencao': atencao,
+      'critico': critico,
+      'pesoMedio':
+          resumo.pesoMedio,
+      'statusGeral':
+          statusGeral,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
           children: [
+
             Text("OvinoTech"),
+
             Text(
               "Gestão inteligente do rebanho",
-              style: TextStyle(fontSize: 12),
+
+              style: TextStyle(
+                fontSize: 12,
+              ),
             ),
           ],
         ),
+
         actions: [
+
           IconButton(
-           icon: const Icon(Icons.add),
-           onPressed: () {
-           Navigator.push(
-           context,
-           MaterialPageRoute(
-           builder: (_) => const CadastroAnimalScreen(),
-              ),
-            );
-          },
-         ),
-          IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
+            icon: const Icon(Icons.add),
+
+            onPressed: () {
+
+              Navigator.push(
+                context,
+
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const CadastroAnimalScreen(),
+                ),
+              );
+            },
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.settings),
+
+            onPressed: () {},
+          ),
         ],
       ),
-      body: ValueListenableBuilder<Box<Animal>>(
-        valueListenable: HiveService.animalBox.listenable(),
-        builder: (context, box, _) {
-          final animais = HiveService.getAnimaisAtivos();
 
-          /// 🔥 RANKING + TOP 3
-          final ranking = animais.map((a) {
-            final gmd = calcularGMD(a.id!);
-            return {
-              "animal": a,
-              "gmd": gmd,
-            };
-          }).toList();
+      body: FutureBuilder(
+        future: dashboardFuture,
 
-          ranking.sort((a, b) =>
-              (b["gmd"] as double).compareTo(a["gmd"] as double));
+        builder: (context, snapshot) {
 
-          final top3 = ranking.take(3).toList();
+          if (!snapshot.hasData) {
 
-          int saudavel = 0;
-          int atencao = 0;
-          int critico = 0;
-
-          int verminose = 0;
-          int eccBaixo = 0;
-          int semAvaliacao = 0;
-
-          double somaPeso = 0;
-          int comPeso = 0;
-
-          for (final a in animais) {
-            final r = AnaliseService.analisarAnimalCompleto(a);
-
-            if (r.status == "vermelho") {
-              critico++;
-            } else if (r.status == "amarelo") {
-              atencao++;
-            } else {
-              saudavel++;
-            }
-
-            bool temDados = false;
-
-            for (var p in r.problemas) {
-              if (p.mensagem.contains("verminose")) verminose++;
-              if (p.mensagem.contains("ECC")) eccBaixo++;
-            }
-
-            final famacha = HiveService.famachaBox.values
-                .where((f) => f.animalId == a.id)
-                .toList();
-
-            if (famacha.isNotEmpty) temDados = true;
-
-            if (!temDados) semAvaliacao++;
-
-            final pesagens = HiveService.pesagemBox.values
-                .where((p) => p.animalId == a.id)
-                .toList();
-
-            if (pesagens.isNotEmpty) {
-              pesagens.sort((a, b) => b.data.compareTo(a.data));
-              somaPeso += pesagens.first.peso;
-              comPeso++;
-            }
+            return const Center(
+              child:
+                  CircularProgressIndicator(),
+            );
           }
+
+          final dados =
+              snapshot.data
+                  as Map<String, dynamic>;
+
+          final animais =
+              dados['animais']
+                  as List<Animal>;
+
+          final saudavel =
+              dados['saudavel'] as int;
+
+          final atencao =
+              dados['atencao'] as int;
+
+          final critico =
+              dados['critico'] as int;
 
           final pesoMedio =
-              comPeso > 0 ? (somaPeso / comPeso) : 0;
+              dados['pesoMedio']
+                  as double;
 
-          String statusGeral = "Saudável";
-          if (critico > 0) {
-            statusGeral = "Requer atenção";
-          } else if (atencao > saudavel) {
-            statusGeral = "Em observação";
-          }
+          final statusGeral =
+              dados['statusGeral']
+                  as String;
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+          return RefreshIndicator(
+            onRefresh: () async {
 
-              /// 🔥 STATUS
-              Row(
-                children: [
-                  Expanded(
-                    child: _cardStatus(
-                        context, saudavel, "Saudáveis", Colors.green, "saudavel"),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _cardStatus(
-                        context, atencao, "Observação", Colors.orange, "observacao"),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _cardStatus(
-                        context, critico, "Ação", Colors.red, "acao"),
-                  ),
-                ],
-              ),
+              DashboardService
+                  .limparCache();
 
-              const SizedBox(height: 20),
+              setState(() {
 
-              /// 🐑 BOTÃO REBANHO (NOVO)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.pets, color: Colors.green),
-                  title: const Text("Rebanho"),
-                  subtitle: const Text("Ver todos os animais"),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AnimalListScreen(tipo: "todos"),
-                      ),
-                    );
-                  },
+                dashboardFuture =
+                    carregarDashboard();
+              });
+            },
+
+            child: ListView(
+              padding:
+                  const EdgeInsets.all(16),
+
+              children: [
+
+                /// 🔥 RESUMO
+                ResumoRebanhoWidget(
+                  saudavel: saudavel,
+                  atencao: atencao,
+                  critico: critico,
+                  pesoMedio: pesoMedio,
+                  statusGeral:
+                      statusGeral,
                 ),
-              ),
-              
-              /// 🔧 MANEJOS (NOVO)
-              Card(
-                child: ListTile(
-                leading: const Icon(Icons.build, color: Colors.blue),
-                title: const Text("Manejos"),
-                subtitle: const Text("Acessar manejos individuais"),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                   MaterialPageRoute(
-                     builder: (_) => const AnimalListScreen(tipo: "manejo"),
+
+                const SizedBox(
+                  height: 20,
+                ),
+
+                /// 🐑 REBANHO
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.pets,
+                      color: Colors.green,
                     ),
-                  );
-                 },
-               ),
-             ),
 
-              const SizedBox(height: 20),
+                    title:
+                        const Text(
+                      "Rebanho",
+                    ),
 
-              /// 🏆 TOP 3
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "🏆 Top 3 do Lote",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+                    subtitle:
+                        const Text(
+                      "Ver todos os animais",
+                    ),
 
-                      ...top3.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final item = entry.value;
-                        final animal = item["animal"] as Animal;
-                        final gmd = item["gmd"] as double;
+                    trailing:
+                        const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                    ),
 
-                        Color cor;
+                    onTap: () {
 
-                        if (gmd == 0) {
-                          cor = Colors.grey;
-                        } else if (gmd < 0) {
-                          cor = Colors.red;
-                        } else if (gmd < 0.05) {
-                          cor = Colors.orange;
-                        } else {
-                          cor = Colors.green;
-                        }
+                      Navigator.push(
+                        context,
 
-                        return Padding(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Text(
-                                "${index + 1}º ",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  "Animal ${animal.identificacao}",
-                                ),
-                              ),
-                              Text(
-                                gmd == 0
-                                ? "Sem dados"
-                                : "${gmd.toStringAsFixed(2)} kg/dia",
-                                style: TextStyle(
-                                  color: gmd == 0 ? Colors.grey : cor,
-                                fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                            ],
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const AnimalListScreen(
+                            tipo: "todos",
                           ),
-                        );
-                      }),
-                    ],
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                /// 🔧 MANEJOS
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.build,
+                      color: Colors.blue,
+                    ),
 
-              /// 🔥 BOTÃO RANKING COMPLETO
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.leaderboard, color: Colors.green),
-                  title: const Text("Ranking do Lote"),
-                  subtitle: const Text("Ver todos os animais"),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                     PremiumGuard.check(context, () {
-                     Navigator.push(
+                    title:
+                        const Text(
+                      "Manejos",
+                    ),
+
+                    subtitle:
+                        const Text(
+                      "Acessar manejos individuais",
+                    ),
+
+                    trailing:
+                        const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                    ),
+
+                    onTap: () {
+
+                      Navigator.push(
                         context,
-                     MaterialPageRoute(
-                     builder: (_) => const RankingScreen(),
+
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const AnimalListScreen(
+                            tipo: "manejo",
                           ),
-                        );
-                      });
-                     },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// ALERTAS
-              if (critico > 0)
-                _cardInfo(
-                  "⚠ $critico animais precisam de ação imediata",
-                  Colors.red,
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
-              if (semAvaliacao > 0)
-                _cardInfo(
-                  "⚠ $semAvaliacao animais sem avaliação recente",
-                  Colors.orange,
+                const SizedBox(
+                  height: 20,
                 ),
 
-              const SizedBox(height: 10),
-
-              /// PESO MÉDIO
-              if (comPeso > 0)
-                Text(
-                  "Peso médio: ${pesoMedio.toStringAsFixed(1)} kg",
-                  style: const TextStyle(fontSize: 16),
+                /// 🏆 TOP 3
+                TopAnimaisWidget(
+                  animais: animais,
                 ),
 
-              const SizedBox(height: 10),
-
-              /// STATUS GERAL
-              Text(
-                "Situação do rebanho: $statusGeral",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                const SizedBox(
+                  height: 20,
                 ),
-              ),
-            ],
+
+                /// 🔥 RANKING
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.leaderboard,
+                      color: Colors.green,
+                    ),
+
+                    title:
+                        const Text(
+                      "Ranking do Lote",
+                    ),
+
+                    subtitle:
+                        const Text(
+                      "Ver todos os animais",
+                    ),
+
+                    trailing:
+                        const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                    ),
+
+                    onTap: () {
+
+                      PremiumGuard.check(
+                        context,
+
+                        () {
+
+                          Navigator.push(
+                            context,
+
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const RankingScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
-    );
-  }
-
-  Widget _cardStatus(BuildContext context, int valor, String titulo,
-      Color cor, String tipo) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AnimalListScreen(tipo: tipo),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: cor.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cor, width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Text(
-              valor.toString(),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: cor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              titulo,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _cardInfo(String texto, Color cor) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cor),
-      ),
-      child: Text(texto),
     );
   }
 }
