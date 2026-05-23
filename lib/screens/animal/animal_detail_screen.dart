@@ -3,109 +3,262 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../models/animal.dart';
 import '../../models/pesagem.dart';
+
 import '../../services/analise_service.dart';
 import '../../services/analise_cache_service.dart';
+
 import '../../helpers/animal_helper.dart';
+
 import '../../widgets/peso_chart.dart';
 
 class AnimalDetailScreen extends StatelessWidget {
   final Animal animal;
 
-  const AnimalDetailScreen({super.key, required this.animal});
+  const AnimalDetailScreen({
+    super.key,
+    required this.animal,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(animal.nome),
+        title: Text(
+          animal.nome ??
+              animal.identificacao,
+        ),
       ),
+
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ValueListenableBuilder(
-          valueListenable: Hive.box<Pesagem>('pesagens').listenable(),
-          builder: (context, box, _) {
+        padding:
+            const EdgeInsets.all(16),
 
-            final pesagens = box.values
-                .where((p) => p.animalId == animal.id.toString())
-                .toList()
-              ..sort((a, b) => b.data.compareTo(a.data));
+        child:
+            ValueListenableBuilder(
+          valueListenable:
+              Hive.box<Pesagem>(
+                      'pesagens')
+                  .listenable(),
 
-            final gmd = AnimalHelper.calcularGMD(pesagens);
-            final diferenca = AnimalHelper.calcularDiferenca(pesagens);
+          builder: (
+            context,
+            box,
+            _,
+          ) {
+
+            final animalAtualizado =
+                Hive.box<Animal>(
+                        'animals')
+                    .values
+                    .firstWhere(
+              (a) =>
+                  a.id ==
+                  animal.id,
+
+              orElse: () =>
+                  animal,
+            );
+
+            final pesagens =
+                box.values
+                    .where(
+                      (p) =>
+                          p.animalId ==
+                          animalAtualizado
+                              .id,
+                    )
+                    .toList()
+
+                  ..sort(
+                    (a, b) =>
+                        b.data.compareTo(
+                      a.data,
+                    ),
+                  );
+
+            final gmd =
+                AnimalHelper
+                    .calcularGMD(
+              pesagens,
+            );
+
+            final diferenca =
+                AnimalHelper
+                    .calcularDiferenca(
+              pesagens,
+            );
 
             final pesoAtual =
-                pesagens.isNotEmpty ? pesagens.first.peso : 0;
+                pesagens.isNotEmpty
+                    ? pesagens
+                        .first
+                        .peso
+                    : animalAtualizado
+                        .peso;
 
             var resultado =
-                AnaliseCacheService.getAnalise(animal.id!);
+                AnaliseCacheService
+                    .getAnalise(
+              animalAtualizado.id,
+            );
 
-            if (resultado == null) {
+            if (resultado ==
+                null) {
+
               resultado =
-                  AnaliseService.analisarAnimalCompleto(animal);
-              AnaliseCacheService.setAnalise(animal.id!, resultado);
+                  AnaliseService
+                      .analisarAnimalCompleto(
+                animalAtualizado,
+              );
+
+              AnaliseCacheService
+                  .setAnalise(
+                animalAtualizado.id,
+                resultado,
+              );
             }
 
             return SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
+
                 children: [
 
-                  // 📊 PESO
+                  /// 📊 PESO
                   Text(
                     "Peso atual: ${pesoAtual.toStringAsFixed(1)} kg",
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+
+                    style:
+                        const TextStyle(
+                      fontSize:
+                          18,
+
+                      fontWeight:
+                          FontWeight
+                              .bold,
+                    ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(
+                    height: 10,
+                  ),
 
-                  // 📈 GMD
+                  /// 📈 GMD
                   Text(
                     "GMD: ${gmd.toStringAsFixed(3)} kg/dia",
                   ),
 
-                  // 📉 DIFERENÇA
+                  /// 📉 DIFERENÇA
                   Text(
                     "Ganho último período: ${diferenca.toStringAsFixed(1)} kg",
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(
+                    height: 20,
+                  ),
 
-                  // 📊 GRÁFICO
-                  PesoChart(lista: pesagens),
+                  /// 📊 GRÁFICO
+                  PesoChart(
+                    lista:
+                        pesagens,
+                  ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(
+                    height: 20,
+                  ),
 
-                  // 🧠 STATUS
+                  /// 🧠 STATUS
                   Text(
                     "Status: ${resultado.status}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: resultado.cor,
+
+                    style:
+                        TextStyle(
+                      fontWeight:
+                          FontWeight
+                              .bold,
+
+                      color:
+                          resultado
+                              .cor,
                     ),
                   ),
 
-                  const SizedBox(height: 10),
-
-                  Text(resultado.mensagem),
-
-                  const SizedBox(height: 20),
-
-                  // 📋 HISTÓRICO
-                  const Text(
-                    "Histórico de Pesagens",
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                  const SizedBox(
+                    height: 10,
                   ),
 
-                  const SizedBox(height: 10),
+                  Text(
+                    resultado
+                        .mensagem,
+                  ),
 
-                  ...pesagens.map((p) => ListTile(
-                        title:
-                            Text("${p.peso.toStringAsFixed(1)} kg"),
-                        subtitle:
-                            Text(p.data.toString().split(' ')[0]),
-                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  /// 📋 HISTÓRICO
+                  const Text(
+                    "Histórico de Pesagens",
+
+                    style:
+                        TextStyle(
+                      fontSize:
+                          18,
+
+                      fontWeight:
+                          FontWeight
+                              .bold,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 10,
+                  ),
+
+                  if (pesagens
+                      .isEmpty)
+
+                    const Center(
+                      child: Padding(
+                        padding:
+                            EdgeInsets.all(
+                                20),
+
+                        child: Text(
+                          "Nenhuma pesagem cadastrada",
+                        ),
+                      ),
+                    )
+
+                  else
+
+                    ...pesagens.map(
+                      (p) =>
+                          Card(
+                        child:
+                            ListTile(
+                          leading:
+                              const Icon(
+                            Icons
+                                .monitor_weight,
+                          ),
+
+                          title: Text(
+                            "${p.peso.toStringAsFixed(1)} kg",
+                          ),
+
+                          subtitle:
+                              Text(
+                            p.data
+                                .toString()
+                                .split(
+                                    ' ')[0],
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             );

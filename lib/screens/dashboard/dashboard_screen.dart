@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../models/animal.dart';
 
@@ -26,81 +27,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState
     extends State<DashboardScreen> {
-
-  late Future<Map<String, dynamic>>
-      dashboardFuture;
-
-  @override
-  void initState() {
-    super.initState();
-
-    dashboardFuture =
-        carregarDashboard();
-  }
-
-  Future<Map<String, dynamic>>
-      carregarDashboard() async {
-
-    final animais =
-        HiveService.getAnimaisAtivos();
-
-    final resumo =
-        DashboardService.gerarResumo(
-      animais,
-    );
-
-    int saudavel = 0;
-    int atencao = 0;
-    int critico = 0;
-
-    for (final animal in animais) {
-
-      final r =
-          DashboardService.getAnalise(
-        animal,
-      );
-
-      if (r.status == "vermelho") {
-
-        critico++;
-
-      } else if (r.status ==
-          "amarelo") {
-
-        atencao++;
-
-      } else {
-
-        saudavel++;
-      }
-    }
-
-    String statusGeral =
-        "Saudável";
-
-    if (critico > 0) {
-
-      statusGeral =
-          "Requer atenção";
-
-    } else if (atencao >
-        saudavel) {
-
-      statusGeral =
-          "Em observação";
-    }
-
-    return {
-      'animais': animais,
-      'saudavel': saudavel,
-      'atencao': atencao,
-      'critico': critico,
-      'pesoMedio':
-          resumo.pesoMedio,
-      'statusGeral':
-          statusGeral,
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,43 +77,68 @@ class _DashboardScreenState
         ],
       ),
 
-      body: FutureBuilder(
-        future: dashboardFuture,
+      body: ValueListenableBuilder(
+        valueListenable:
+            Hive.box<Animal>('animals')
+                .listenable(),
 
-        builder: (context, snapshot) {
-
-          if (!snapshot.hasData) {
-
-            return const Center(
-              child:
-                  CircularProgressIndicator(),
-            );
-          }
-
-          final dados =
-              snapshot.data
-                  as Map<String, dynamic>;
+        builder: (context, box, _) {
 
           final animais =
-              dados['animais']
-                  as List<Animal>;
+              HiveService.getAnimaisAtivos();
 
-          final saudavel =
-              dados['saudavel'] as int;
+          final resumo =
+              DashboardService
+                  .gerarResumo(
+            animais,
+          );
 
-          final atencao =
-              dados['atencao'] as int;
+          int saudavel = 0;
+          int atencao = 0;
+          int critico = 0;
 
-          final critico =
-              dados['critico'] as int;
+          for (final animal
+              in animais) {
+
+            final r =
+                DashboardService
+                    .getAnalise(
+              animal,
+            );
+
+            if (r.status ==
+                "vermelho") {
+
+              critico++;
+
+            } else if (r.status ==
+                "amarelo") {
+
+              atencao++;
+
+            } else {
+
+              saudavel++;
+            }
+          }
+
+          String statusGeral =
+              "Saudável";
+
+          if (critico > 0) {
+
+            statusGeral =
+                "Requer atenção";
+
+          } else if (atencao >
+              saudavel) {
+
+            statusGeral =
+                "Em observação";
+          }
 
           final pesoMedio =
-              dados['pesoMedio']
-                  as double;
-
-          final statusGeral =
-              dados['statusGeral']
-                  as String;
+              resumo.pesoMedio;
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -195,11 +146,7 @@ class _DashboardScreenState
               DashboardService
                   .limparCache();
 
-              setState(() {
-
-                dashboardFuture =
-                    carregarDashboard();
-              });
+              setState(() {});
             },
 
             child: ListView(
@@ -210,10 +157,14 @@ class _DashboardScreenState
 
                 /// 🔥 RESUMO
                 ResumoRebanhoWidget(
-                  saudavel: saudavel,
-                  atencao: atencao,
-                  critico: critico,
-                  pesoMedio: pesoMedio,
+                  saudavel:
+                      saudavel,
+                  atencao:
+                      atencao,
+                  critico:
+                      critico,
+                  pesoMedio:
+                      pesoMedio,
                   statusGeral:
                       statusGeral,
                 ),
@@ -225,9 +176,11 @@ class _DashboardScreenState
                 /// 🐑 REBANHO
                 Card(
                   child: ListTile(
-                    leading: const Icon(
+                    leading:
+                        const Icon(
                       Icons.pets,
-                      color: Colors.green,
+                      color:
+                          Colors.green,
                     ),
 
                     title:
@@ -242,7 +195,8 @@ class _DashboardScreenState
 
                     trailing:
                         const Icon(
-                      Icons.arrow_forward_ios,
+                      Icons
+                          .arrow_forward_ios,
                       size: 16,
                     ),
 
@@ -254,7 +208,8 @@ class _DashboardScreenState
                         MaterialPageRoute(
                           builder: (_) =>
                               const AnimalListScreen(
-                            tipo: "todos",
+                            tipo:
+                                "todos",
                           ),
                         ),
                       );
@@ -265,9 +220,11 @@ class _DashboardScreenState
                 /// 🔧 MANEJOS
                 Card(
                   child: ListTile(
-                    leading: const Icon(
+                    leading:
+                        const Icon(
                       Icons.build,
-                      color: Colors.blue,
+                      color:
+                          Colors.blue,
                     ),
 
                     title:
@@ -282,7 +239,8 @@ class _DashboardScreenState
 
                     trailing:
                         const Icon(
-                      Icons.arrow_forward_ios,
+                      Icons
+                          .arrow_forward_ios,
                       size: 16,
                     ),
 
@@ -294,7 +252,8 @@ class _DashboardScreenState
                         MaterialPageRoute(
                           builder: (_) =>
                               const AnimalListScreen(
-                            tipo: "manejo",
+                            tipo:
+                                "manejo",
                           ),
                         ),
                       );
@@ -308,7 +267,8 @@ class _DashboardScreenState
 
                 /// 🏆 TOP 3
                 TopAnimaisWidget(
-                  animais: animais,
+                  animais:
+                      animais,
                 ),
 
                 const SizedBox(
@@ -318,9 +278,12 @@ class _DashboardScreenState
                 /// 🔥 RANKING
                 Card(
                   child: ListTile(
-                    leading: const Icon(
-                      Icons.leaderboard,
-                      color: Colors.green,
+                    leading:
+                        const Icon(
+                      Icons
+                          .leaderboard,
+                      color:
+                          Colors.green,
                     ),
 
                     title:
@@ -335,13 +298,15 @@ class _DashboardScreenState
 
                     trailing:
                         const Icon(
-                      Icons.arrow_forward_ios,
+                      Icons
+                          .arrow_forward_ios,
                       size: 16,
                     ),
 
                     onTap: () {
 
-                      PremiumGuard.check(
+                      PremiumGuard
+                          .check(
                         context,
 
                         () {

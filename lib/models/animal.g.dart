@@ -17,46 +17,52 @@ class AnimalAdapter extends TypeAdapter<Animal> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Animal(
-      nome: fields[0] as String?,
-      brinco: fields[1] as String?,
-      raca: fields[2] as String,
-      sexo: fields[3] as String,
-      categoria: fields[4] as String,
+      id: fields[0] as String?,
+      identificacao: fields[1] as String?,
+      sexo: fields[2] as String,
+      raca: fields[3] as String,
+      dataNascimento: fields[4] as DateTime,
       peso: fields[5] as double,
-      origem: fields[12] as OrigemAnimal?,
-      dataNascimento: fields[6] as DateTime?,
-      dataEntrada: fields[13] as DateTime?,
-      pesoNascimento: fields[14] as double?,
-      pesoEntrada: fields[15] as double?,
-      baseGenetica: (fields[7] as Map?)?.cast<String, double>(),
+      categoria: fields[6] as String,
+      origem: fields[7] as String,
       paiId: fields[8] as String?,
       maeId: fields[9] as String?,
       ativo: fields[10] as bool,
       dataCadastro: fields[11] as DateTime?,
-      id: fields[16] as String?,
+      pesoNascimento: fields[12] as double?,
+      baseGenetica: (fields[13] as Map?)?.cast<String, double>(),
+      status: fields[14] as String,
+      lote: fields[15] as String?,
+      observacoes: fields[16] as String?,
+      fotoUrl: fields[17] as String?,
+      ultimoPeso: fields[18] as double?,
+      ultimaPesagem: fields[19] as DateTime?,
+      nome: fields[20] as String?,
+      dataEntrada: fields[21] as DateTime?,
+      pesoEntrada: fields[22] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Animal obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(23)
       ..writeByte(0)
-      ..write(obj.nome)
+      ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.brinco)
+      ..write(obj.identificacao)
       ..writeByte(2)
-      ..write(obj.raca)
-      ..writeByte(3)
       ..write(obj.sexo)
+      ..writeByte(3)
+      ..write(obj.raca)
       ..writeByte(4)
-      ..write(obj.categoria)
+      ..write(obj.dataNascimento)
       ..writeByte(5)
       ..write(obj.peso)
       ..writeByte(6)
-      ..write(obj.dataNascimento)
+      ..write(obj.categoria)
       ..writeByte(7)
-      ..write(obj.baseGenetica)
+      ..write(obj.origem)
       ..writeByte(8)
       ..write(obj.paiId)
       ..writeByte(9)
@@ -66,15 +72,27 @@ class AnimalAdapter extends TypeAdapter<Animal> {
       ..writeByte(11)
       ..write(obj.dataCadastro)
       ..writeByte(12)
-      ..write(obj.origem)
-      ..writeByte(13)
-      ..write(obj.dataEntrada)
-      ..writeByte(14)
       ..write(obj.pesoNascimento)
+      ..writeByte(13)
+      ..write(obj.baseGenetica)
+      ..writeByte(14)
+      ..write(obj.status)
       ..writeByte(15)
-      ..write(obj.pesoEntrada)
+      ..write(obj.lote)
       ..writeByte(16)
-      ..write(obj.id);
+      ..write(obj.observacoes)
+      ..writeByte(17)
+      ..write(obj.fotoUrl)
+      ..writeByte(18)
+      ..write(obj.ultimoPeso)
+      ..writeByte(19)
+      ..write(obj.ultimaPesagem)
+      ..writeByte(20)
+      ..write(obj.nome)
+      ..writeByte(21)
+      ..write(obj.dataEntrada)
+      ..writeByte(22)
+      ..write(obj.pesoEntrada);
   }
 
   @override
@@ -90,7 +108,7 @@ class AnimalAdapter extends TypeAdapter<Animal> {
 
 class OrigemAnimalAdapter extends TypeAdapter<OrigemAnimal> {
   @override
-  final int typeId = 3;
+  final int typeId = 1;
 
   @override
   OrigemAnimal read(BinaryReader reader) {

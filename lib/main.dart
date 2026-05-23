@@ -15,6 +15,9 @@ import 'models/reproducao.dart';
 import 'models/config_manejo.dart';
 import 'models/settings.dart';
 import 'models/sanidade.dart';
+import 'models/sync_queue_item.dart';
+
+import 'services/sync_service.dart';
 
 import 'screens/main_screen.dart';
 
@@ -33,48 +36,76 @@ Future<void> main() async {
   await Hive.initFlutter();
 
   /// 🔥 ADAPTERS
-  Hive.registerAdapter(
-    AnimalAdapter(),
-  );
 
-  /// 🔥 ENUM ORIGEM ANIMAL
-  Hive.registerAdapter(
-    OrigemAnimalAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(
+      AnimalAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    ManejoAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(
+      OrigemAnimalAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    PesagemAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(2)) {
+    Hive.registerAdapter(
+      ManejoAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    FamachaAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(3)) {
+    Hive.registerAdapter(
+      PesagemAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    ECCAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(4)) {
+    Hive.registerAdapter(
+      FamachaAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    ReproducaoAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(5)) {
+    Hive.registerAdapter(
+      ECCAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    ConfigManejoAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(6)) {
+    Hive.registerAdapter(
+      ReproducaoAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    SettingsAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(7)) {
+    Hive.registerAdapter(
+      ConfigManejoAdapter(),
+    );
+  }
 
-  Hive.registerAdapter(
-    SanidadeAdapter(),
-  );
+  if (!Hive.isAdapterRegistered(8)) {
+    Hive.registerAdapter(
+      SettingsAdapter(),
+    );
+  }
+
+  if (!Hive.isAdapterRegistered(9)) {
+    Hive.registerAdapter(
+      SanidadeAdapter(),
+    );
+  }
+
+  /// 🔥 FILA SYNC
+  if (!Hive.isAdapterRegistered(20)) {
+    Hive.registerAdapter(
+      SyncQueueItemAdapter(),
+    );
+  }
 
   /// 🔥 BOXES
+
   await Hive.openBox<Animal>(
     'animals',
   );
@@ -111,16 +142,28 @@ Future<void> main() async {
     'sanidade',
   );
 
+  /// 🔥 FILA
+  await Hive.openBox<SyncQueueItem>(
+    'sync_queue',
+  );
+
+  /// 🔥 INICIA SYNC
+  SyncService.iniciar();
+
   runApp(
     const MyApp(),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
 
     return MaterialApp(
       debugShowCheckedModeBanner:
@@ -136,9 +179,15 @@ class MyApp extends StatelessWidget {
       ),
 
       localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+
+        GlobalMaterialLocalizations
+            .delegate,
+
+        GlobalWidgetsLocalizations
+            .delegate,
+
+        GlobalCupertinoLocalizations
+            .delegate,
       ],
 
       supportedLocales: const [

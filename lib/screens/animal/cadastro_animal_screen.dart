@@ -87,8 +87,8 @@ class _CadastroAnimalScreenState extends State<CadastroAnimalScreen> {
         sexo: sexo,
         categoria: categoriaFinal,
         peso: peso,
-        origem: origem,
-        dataNascimento: dataNascimento,
+        origem: origem.name,
+        dataNascimento: dataNascimento ?? DateTime.now(),
         dataEntrada: origem == OrigemAnimal.comprado ? dataEntrada : null,
         pesoEntrada: origem == OrigemAnimal.comprado ? peso : null,
         // 🔥 lote será usado depois no model
