@@ -5,7 +5,7 @@ import '../../models/animal.dart';
 import '../../models/pesagem.dart';
 import '../../services/pesagem_service.dart';
 import '../../services/animal_service.dart';
-import '../../core/services/db_service.dart';
+import '../../core/services/hive_service.dart';
 
 class PesagemScreen extends StatefulWidget {
   final bool modoCurral;
@@ -83,7 +83,10 @@ class _PesagemScreenState extends State<PesagemScreen> {
 
       /// 🔥 ATUALIZA PESO NO ANIMAL (OPCIONAL)
       animalSelecionado!.peso = peso;
-      await DBService.addAnimal(animalSelecionado!);
+      await HiveService.animalBox.put(
+       animalSelecionado!.id,
+       animalSelecionado!,
+         );
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Pesagem salva com sucesso")),

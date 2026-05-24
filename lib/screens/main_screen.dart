@@ -1,49 +1,87 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'dashboard/dashboard_screen.dart';
+import 'dashboard/animal_list_screen.dart';
+import 'manejos/manejos_screen.dart';
+import 'relatorios/relatorios_screen.dart';
+import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() =>
-      _MainScreenState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
 
-  bool carregou = false;
+  int paginaAtual = 0;
 
-  @override
-  void initState() {
-    super.initState();
+  final paginas = [
 
-    Future.delayed(
-      const Duration(milliseconds: 400),
-      () {
-        if (!mounted) return;
+    const DashboardScreen(),
 
-        setState(() {
-          carregou = true;
-        });
-      },
-    );
-  }
+    const AnimalListScreen(
+      tipo: 'todos',
+    ),
+
+    const ManejosScreen(),
+
+    const RelatoriosScreen(),
+
+    const SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
 
-    if (!carregou) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF081C15),
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Scaffold(
 
-    return const DashboardScreen();
+      body: paginas[paginaAtual],
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: paginaAtual,
+
+        onTap: (index) {
+          setState(() {
+            paginaAtual = index;
+          });
+        },
+
+        type: BottomNavigationBarType.fixed,
+
+        selectedItemColor: Colors.green,
+
+        unselectedItemColor: Colors.grey,
+
+        items: const [
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Início',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pets),
+            label: 'Rebanho',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.medical_services),
+            label: 'Manejos',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Relatórios',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Config',
+          ),
+        ],
+      ),
+    );
   }
 }

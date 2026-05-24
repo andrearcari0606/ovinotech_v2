@@ -17,6 +17,8 @@ import 'models/settings.dart';
 import 'models/sanidade.dart';
 import 'models/sync_queue_item.dart';
 
+import 'core/theme/app_theme.dart';
+
 import 'services/sync_service.dart';
 
 import 'screens/main_screen.dart';
@@ -171,12 +173,8 @@ class MyApp extends StatelessWidget {
 
       title: 'OvinoTech',
 
-      theme: ThemeData(
-        useMaterial3: true,
-
-        colorSchemeSeed:
-            Colors.green,
-      ),
+      /// 🔥 TEMA GLOBAL
+      theme: AppTheme.lightTheme,
 
       localizationsDelegates: const [
 
