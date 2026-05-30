@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../core/services/hive_service.dart';
-
-import '../../models/animal.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/premium_card.dart';
 
 import '../dashboard/animal_list_screen.dart';
-import '../manejos/manejos_screen.dart';
-import '../relatorios/relatorios_screen.dart';
 import '../settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -43,29 +42,79 @@ class _DashboardScreenState
           somaPeso / animais.length;
     }
 
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Scaffold(
+
+      floatingActionButton:
+          FloatingActionButton.extended(
+
+        backgroundColor:
+            AppColors.primary,
+
+        elevation: 0,
+
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(
+            18,
+          ),
+        ),
+
+        onPressed: () {
+
+          // cadastro animal
+        },
+
+        icon: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+
+        label: const Text(
+          'Novo Animal',
+
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight:
+                FontWeight.w700,
+          ),
+        ),
+      ),
 
       appBar: AppBar(
 
         title: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
+          children: [
 
             Text(
               'OvinoTech',
+
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
               ),
             ),
 
-            SizedBox(height: 2),
-
             Text(
               'Gestão inteligente do rebanho',
+
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.black54,
+                fontSize: 13,
+                fontWeight:
+                    FontWeight.w600,
+
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
               ),
             ),
           ],
@@ -73,31 +122,197 @@ class _DashboardScreenState
 
         actions: [
 
-          /// CONFIGURAÇÕES
-          IconButton(
-            icon: const Icon(Icons.settings),
+          Container(
+            margin:
+                const EdgeInsets.only(
+              right: 16,
+            ),
 
-            onPressed: () {
+            decoration: BoxDecoration(
 
-              Navigator.push(
-                context,
+              color: isDark
+                  ? AppColors.darkSurface
+                  : Colors.white,
 
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const SettingsScreen(),
+              borderRadius:
+                  BorderRadius.circular(
+                18,
+              ),
+
+              border: Border.all(
+                color: isDark
+                    ? AppColors.glassBorder
+                    : AppColors.border,
+              ),
+
+              boxShadow: [
+
+                BoxShadow(
+                  color: Colors.black
+                      .withOpacity(
+                    0.04,
+                  ),
+
+                  blurRadius: 14,
+
+                  offset:
+                      const Offset(0, 6),
                 ),
-              );
-            },
+              ],
+            ),
+
+            child: IconButton(
+
+              icon: Icon(
+                LucideIcons.settings2,
+
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
+              ),
+
+              onPressed: () {
+
+                Navigator.push(
+                  context,
+
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
 
       body: ListView(
-        padding: const EdgeInsets.all(16),
+
+        padding: const EdgeInsets.all(20),
 
         children: [
 
-          /// CARDS PRINCIPAIS
+          // =========================
+          // HEADER
+          // =========================
+
+          Container(
+
+            padding:
+                const EdgeInsets.all(
+              20,
+            ),
+
+            decoration: BoxDecoration(
+
+              gradient:
+                  const LinearGradient(
+
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+
+                colors: [
+
+                  Color(0xFF244734),
+                  Color(0xFF3E6B50),
+                ],
+              ),
+
+              borderRadius:
+                  BorderRadius.circular(
+                30,
+              ),
+
+              boxShadow: [
+
+                BoxShadow(
+                  color: Colors.black
+                      .withOpacity(
+                    0.12,
+                  ),
+
+                  blurRadius: 40,
+
+                  offset:
+                      const Offset(0, 18),
+                ),
+              ],
+            ),
+
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
+              children: [
+
+                Container(
+
+                  padding:
+                      const EdgeInsets.all(
+                    14,
+                  ),
+
+                  decoration: BoxDecoration(
+
+                    color: Colors.white
+                        .withOpacity(
+                      0.10,
+                    ),
+
+                    borderRadius:
+                        BorderRadius.circular(
+                      18,
+                    ),
+                  ),
+
+                  child: const Icon(
+                    LucideIcons.shieldCheck,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                const Text(
+                  'Seu rebanho está sendo monitorado.',
+
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight:
+                        FontWeight.w800,
+                    height: 1.2,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  '$totalAnimais animais cadastrados',
+
+                  style: TextStyle(
+                    color:
+                        Colors.white.withOpacity(
+                      0.82,
+                    ),
+
+                    fontSize: 14,
+                    fontWeight:
+                        FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // =========================
+          // MÉTRICAS
+          // =========================
+
           Row(
             children: [
 
@@ -105,8 +320,8 @@ class _DashboardScreenState
                 child: _cardResumo(
                   'Animais',
                   totalAnimais.toString(),
-                  Colors.green,
-                  Icons.pets,
+                  AppColors.primary,
+                  LucideIcons.circle,
                 ),
               ),
 
@@ -116,8 +331,8 @@ class _DashboardScreenState
                 child: _cardResumo(
                   'Peso Médio',
                   '${pesoMedio.toStringAsFixed(1)} kg',
-                  Colors.blue,
-                  Icons.monitor_weight,
+                  AppColors.secondary,
+                  LucideIcons.scale,
                 ),
               ),
             ],
@@ -125,156 +340,304 @@ class _DashboardScreenState
 
           const SizedBox(height: 24),
 
-          /// STATUS SANITÁRIO
-          Row(
-            children: [
+          // =========================
+          // STATUS
+          // =========================
 
-              Expanded(
-                child: _statusCard(
-                  'Saudáveis',
-                  '1',
-                  Colors.green,
-                ),
-              ),
+          PremiumCard(
 
-              const SizedBox(width: 10),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
 
-              Expanded(
-                child: _statusCard(
-                  'Atenção',
-                  '2',
-                  Colors.orange,
-                ),
-              ),
+              children: [
 
-              const SizedBox(width: 10),
+                Text(
+                  'Status Sanitário',
 
-              Expanded(
-                child: _statusCard(
-                  'Críticos',
-                  '0',
-                  Colors.red,
-                ),
-              ),
-            ],
-          ),
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight:
+                        FontWeight.w800,
 
-          const SizedBox(height: 28),
-
-          /// REBANHO
-          _menuCard(
-            titulo: 'Rebanho',
-            subtitulo:
-                'Ver todos os animais',
-
-            icon: Icons.pets,
-
-            color: Colors.green,
-
-            onTap: () {
-
-              Navigator.push(
-                context,
-
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const AnimalListScreen(
-                    tipo: 'todos',
+                    color: isDark
+                        ? AppColors
+                            .darkTextPrimary
+                        : AppColors
+                            .textPrimary,
                   ),
                 ),
-              );
-            },
-          ),
 
-          const SizedBox(height: 16),
+                const SizedBox(height: 22),
 
-          /// MANEJOS
-          _menuCard(
-            titulo: 'Manejos',
-            subtitulo:
-                'Acessar manejos',
+                Row(
+                  children: [
 
-            icon:
-                Icons.medical_services,
+                    Expanded(
+                      child: _statusCard(
+                        context,
+                        'Saudáveis',
 
-            color: Colors.orange,
+                        animais.isEmpty
+                            ? '0'
+                            : '1',
 
-            onTap: () {
+                        AppColors.success,
 
-              Navigator.push(
-                context,
+                        'saudavel',
+                      ),
+                    ),
 
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const ManejosScreen(),
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: _statusCard(
+                        context,
+                        'Atenção',
+
+                        animais.isEmpty
+                            ? '0'
+                            : '2',
+
+                        AppColors.warning,
+
+                       'observacao',
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: _statusCard(
+                        context,
+                        'Críticos',
+
+                        '0',
+
+                        AppColors.error,
+
+                        'acao',
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          /// RELATÓRIOS
-          _menuCard(
-            titulo: 'Relatórios',
-            subtitulo:
-                'Visualizar análises',
-
-            icon: Icons.bar_chart,
-
-            color: Colors.indigo,
-
-            onTap: () {
-
-              Navigator.push(
-                context,
-
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const RelatoriosScreen(),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 28),
-
-          /// TOP REBANHO
-          const Text(
-            'Top do Rebanho',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 28),
 
-          ...animais.take(3).map(
-            (animal) {
+          // =========================
+          // ÚLTIMA ATIVIDADE
+          // =========================
 
-              return Card(
-                child: ListTile(
+          PremiumCard(
 
-                  leading: const Icon(
-                    Icons.emoji_events,
-                    color: Colors.amber,
-                  ),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
 
-                  title: Text(
-                    animal.nome ??
-                        'Sem nome',
-                  ),
+              children: [
 
-                  subtitle: Text(
-                    'Peso: ${animal.peso.toStringAsFixed(1)} kg',
+                Text(
+                  'Última atividade',
+
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight:
+                        FontWeight.w800,
+
+                    color: isDark
+                        ? AppColors
+                            .darkTextPrimary
+                        : AppColors
+                            .textPrimary,
                   ),
                 ),
-              );
-            },
+
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+
+                    Container(
+
+                      padding:
+                          const EdgeInsets
+                              .all(14),
+
+                      decoration:
+                          BoxDecoration(
+
+                        color: AppColors
+                            .primary
+                            .withOpacity(
+                          0.10,
+                        ),
+
+                        borderRadius:
+                            BorderRadius
+                                .circular(
+                          18,
+                        ),
+                      ),
+
+                      child: const Icon(
+                        LucideIcons.activity,
+
+                        color:
+                            AppColors.primary,
+                      ),
+                    ),
+
+                    const SizedBox(width: 18),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+
+                        children: [
+
+                          Text(
+
+                            animais.isEmpty
+
+                                ? 'Nenhuma atividade registrada'
+
+                                : 'Último manejo realizado',
+
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight:
+                                  FontWeight
+                                      .w700,
+
+                              color: isDark
+                                  ? AppColors
+                                      .darkTextPrimary
+                                  : AppColors
+                                      .textPrimary,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 4,
+                          ),
+
+                          Text(
+
+                            animais.isEmpty
+
+                                ? 'Comece cadastrando animais'
+
+                                : 'Sistema operando normalmente',
+
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? AppColors
+                                      .darkTextSecondary
+                                  : AppColors
+                                      .textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 34),
+
+          _sectionTitle(
+            'Top do Rebanho',
+          ),
+
+          const SizedBox(height: 18),
+
+          if (animais.isEmpty)
+
+            PremiumCard(
+
+              child: Column(
+                children: [
+
+                  Container(
+
+                    padding:
+                        const EdgeInsets
+                            .all(18),
+
+                    decoration:
+                        BoxDecoration(
+
+                      color: AppColors
+                          .primary
+                          .withOpacity(
+                        0.08,
+                      ),
+
+                      shape:
+                          BoxShape.circle,
+                    ),
+
+                    child: const Icon(
+                      LucideIcons.circle,
+
+                      size: 34,
+
+                      color:
+                          AppColors.primary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Seu rebanho ainda está vazio',
+
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight:
+                          FontWeight.w800,
+
+                      color: isDark
+                          ? AppColors
+                              .darkTextPrimary
+                          : AppColors
+                              .textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Text(
+                    'Cadastre o primeiro animal para começar o manejo.',
+
+                    textAlign:
+                        TextAlign.center,
+
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+
+                      color: isDark
+                          ? AppColors
+                              .darkTextSecondary
+                          : AppColors
+                              .textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 120),
         ],
       ),
     );
@@ -287,50 +650,100 @@ class _DashboardScreenState
     IconData icon,
   ) {
 
-    return Container(
-      padding: const EdgeInsets.all(20),
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
 
-      decoration: BoxDecoration(
-        color: cor.withOpacity(0.1),
+    return PremiumCard(
 
-        borderRadius:
-            BorderRadius.circular(20),
+      padding: const EdgeInsets.all(16),
 
-        border: Border.all(
-          color: cor,
-        ),
-      ),
-
-      child: Column(
+      child: Row(
         children: [
 
-          Icon(
-            icon,
-            color: cor,
-            size: 32,
-          ),
+          Container(
 
-          const SizedBox(height: 12),
+            padding:
+                const EdgeInsets.all(
+              14,
+            ),
 
-          Text(
-            valor,
+            decoration: BoxDecoration(
 
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight:
-                  FontWeight.bold,
+              color:
+                  cor.withOpacity(
+                0.10,
+              ),
 
+              borderRadius:
+                  BorderRadius.circular(
+                18,
+              ),
+            ),
+
+            child: Icon(
+              icon,
               color: cor,
+              size: 26,
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(width: 14),
 
-          Text(
-            titulo,
+          Expanded(
+            child: Column(
 
-            style: const TextStyle(
-              fontSize: 16,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
+              mainAxisSize:
+                  MainAxisSize.min,
+
+              children: [
+
+                Text(
+                  valor,
+
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow.ellipsis,
+
+                  style: TextStyle(
+
+                    fontSize: 28,
+
+                    height: 1,
+
+                    fontWeight:
+                        FontWeight.w800,
+
+                    color: cor,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  titulo,
+
+                  style: TextStyle(
+
+                    fontSize: 13,
+
+                    fontWeight:
+                        FontWeight.w600,
+
+                    color: isDark
+
+                        ? AppColors
+                            .darkTextSecondary
+
+                        : AppColors
+                            .textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -339,89 +752,139 @@ class _DashboardScreenState
   }
 
   Widget _statusCard(
+    BuildContext context,
     String titulo,
     String valor,
     Color cor,
+    String filtro,
   ) {
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 16,
-      ),
+    return GestureDetector(
 
-      decoration: BoxDecoration(
-        color: cor.withOpacity(0.08),
+      onTap: () {
 
-        borderRadius:
-            BorderRadius.circular(18),
+        Navigator.push(
 
-        border: Border.all(
-          color: cor.withOpacity(0.4),
+          context,
+
+          MaterialPageRoute(
+            builder: (_) =>
+                AnimalListScreen(
+              tipo: filtro,
+            ),
+          ),
+        );
+      },
+
+      child: AnimatedContainer(
+
+        duration:
+            const Duration(
+          milliseconds: 180,
         ),
-      ),
 
-      child: Column(
-        children: [
+        curve: Curves.easeOut,
 
-          Text(
-            valor,
+        padding:
+            const EdgeInsets.symmetric(
+          vertical: 18,
+        ),
 
-            style: TextStyle(
-              color: cor,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+        decoration: BoxDecoration(
+
+          color:
+              cor.withOpacity(
+            0.10,
+          ),
+
+          borderRadius:
+              BorderRadius.circular(
+            20,
+          ),
+
+          border: Border.all(
+            color:
+                cor.withOpacity(
+              0.16,
             ),
           ),
 
-          const SizedBox(height: 6),
+          boxShadow: [
 
-          Text(
-            titulo,
+            BoxShadow(
 
-            style: TextStyle(
-              color: cor,
-              fontWeight: FontWeight.w600,
+              color:
+                  cor.withOpacity(
+                0.08,
+              ),
+
+              blurRadius: 18,
+
+              offset:
+                  const Offset(0, 8),
             ),
-          ),
-        ],
+          ],
+        ),
+
+        child: Column(
+          children: [
+
+            Text(
+              valor,
+
+              style: TextStyle(
+                color: cor,
+                fontSize: 26,
+                fontWeight:
+                    FontWeight.w800,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              titulo,
+
+              textAlign:
+                  TextAlign.center,
+
+              style: TextStyle(
+                color: cor,
+                fontWeight:
+                    FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Icon(
+              LucideIcons.chevronRight,
+
+              size: 16,
+
+              color:
+                  cor.withOpacity(
+                0.75,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _menuCard({
+  Widget _sectionTitle(
+    String title,
+  ) {
 
-    required String titulo,
-    required String subtitulo,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+    return Text(
+      title,
 
-    return Card(
-      child: ListTile(
-
-        leading: Icon(
-          icon,
-          color: color,
-          size: 32,
-        ),
-
-        title: Text(
-          titulo,
-
-          style: const TextStyle(
-            fontWeight:
-                FontWeight.bold,
-          ),
-        ),
-
-        subtitle: Text(subtitulo),
-
-        trailing: const Icon(
-          Icons.chevron_right,
-        ),
-
-        onTap: onTap,
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight:
+            FontWeight.w800,
       ),
     );
   }

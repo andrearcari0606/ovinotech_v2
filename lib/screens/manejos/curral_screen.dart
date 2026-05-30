@@ -10,6 +10,13 @@ import '../../models/pesagem.dart';
 
 import '../../services/animal_service.dart';
 
+import 'widgets/curral_header.dart';
+import 'widgets/curral_animal_card.dart';
+import 'widgets/resumo_dialog.dart';
+import 'widgets/curral_actions.dart';
+import 'widgets/peso_input.dart';
+import 'widgets/famacha_selector.dart';
+
 class CurralScreen extends StatefulWidget {
   final List<Animal>? animaisFiltrados;
 
@@ -96,7 +103,6 @@ class _CurralScreenState
     final manejo =
         ManejoTemp();
 
-    /// FAMACHA
     final famacha =
         HiveService
             .famachaBox
@@ -119,7 +125,6 @@ class _CurralScreenState
           famacha.first.nota;
     }
 
-    /// ECC
     final ecc =
         HiveService.eccBox
             .values
@@ -141,7 +146,6 @@ class _CurralScreenState
           ecc.first.nota;
     }
 
-    /// PESO
     final pesagens =
         HiveService
             .pesagemBox
@@ -208,6 +212,31 @@ class _CurralScreenState
     return Colors.green;
   }
 
+  String textoStatus(
+      ManejoTemp m) {
+
+    if ((m.famacha ?? 0) >=
+            4 ||
+        (m.ecc ?? 5) <= 2) {
+
+      return 'Crítico';
+    }
+
+    if ((m.famacha ?? 0) ==
+        3) {
+
+      return 'Atenção';
+    }
+
+    if (m.famacha != null ||
+        m.ecc != null) {
+
+      return 'Saudável';
+    }
+
+    return 'Sem dados';
+  }
+
   String dataUltimaPesagem(
       Animal animal) {
 
@@ -260,7 +289,6 @@ class _CurralScreenState
           pesoDigitado;
     }
 
-    /// PESO
     if (manejo.peso !=
         null) {
 
@@ -290,7 +318,6 @@ class _CurralScreenState
       await animal.save();
     }
 
-    /// FAMACHA
     if (manejo.famacha !=
         null) {
 
@@ -313,7 +340,6 @@ class _CurralScreenState
       );
     }
 
-    /// ECC
     if (manejo.ecc !=
         null) {
 
@@ -430,22 +456,16 @@ class _CurralScreenState
         animal,
       );
 
-      if ((m.famacha ??
-                  0) >=
-              4 ||
-          (m.ecc ?? 5) <=
-              2) {
+      if ((m.famacha ?? 0) >= 4 ||
+          (m.ecc ?? 5) <= 2) {
 
         critico++;
 
-      } else if ((m.famacha ??
-              0) ==
-          3) {
+      } else if ((m.famacha ?? 0) == 3) {
 
         atencao++;
 
-      } else if (m.famacha !=
-              null ||
+      } else if (m.famacha != null ||
           m.ecc != null) {
 
         saudavel++;
@@ -455,19 +475,17 @@ class _CurralScreenState
     showDialog(
       context: context,
 
-      builder:
-          (_) =>
-              AlertDialog(
-        title: const Text(
-          "Resumo do Manejo",
-        ),
+      barrierColor:
+          Colors.black.withOpacity(0.45),
 
-        content: Text(
-          "Saudáveis: $saudavel\n"
-          "Atenção: $atencao\n"
-          "Críticos: $critico",
-        ),
-      ),
+      builder: (_) {
+
+        return ResumoDialog(
+          saudavel: saudavel,
+          atencao: atencao,
+          critico: critico,
+        );
+      },
     );
   }
 
@@ -491,11 +509,8 @@ class _CurralScreenState
     if (animal == null) {
 
       return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Modo Curral',
-          ),
-        ),
+        backgroundColor:
+            const Color(0xFFF5F3EE),
 
         body: const Center(
           child: Text(
@@ -531,153 +546,106 @@ class _CurralScreenState
         corStatus(combinado);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Curral (${indexAtual + 1}/${lista.length})",
-        ),
-      ),
+      backgroundColor:
+          const Color(0xFFF5F3EE),
 
-      body: Padding(
-        padding:
-            const EdgeInsets.all(
-                16),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
 
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment
-                  .start,
-
-          children: [
-
-            /// CARD
-            Container(
-              width:
-                  double.infinity,
-
-              padding:
-                  const EdgeInsets
-                      .all(16),
-
-              decoration:
-                  BoxDecoration(
-                color: statusCor
-                    .withOpacity(
-                        0.1),
-
-                borderRadius:
-                    BorderRadius
-                        .circular(
-                            14),
-
-                border:
-                    Border.all(
-                  color:
-                      statusCor,
-
-                  width: 2,
-                ),
-              ),
-
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment
-                        .start,
-
-                children: [
-
-                  Text(
-                    "Brinco ${animal.identificacao}",
-
-                    style:
-                        const TextStyle(
-                      fontSize:
-                          20,
-
-                      fontWeight:
-                          FontWeight
-                              .bold,
-                    ),
-                  ),
-
-                  const SizedBox(
-                      height: 6),
-
-                  Text(
-                    "Peso: ${combinado.peso ?? '-'} kg",
-                  ),
-
-                  Text(
-                    dataUltimaPesagem(
-                        animal),
-                  ),
-                ],
-              ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight:
+                  MediaQuery.of(context)
+                          .size
+                          .height -
+                      40,
             ),
 
-            const SizedBox(
-                height: 20),
+            child: IntrinsicHeight(
+              child: AnimatedSwitcher(
+                duration:
+                    const Duration(
+                  milliseconds: 220,
+                ),
 
-            /// FAMACHA
-            const Text(
-                "Famacha"),
+                transitionBuilder:
+                    (child, animation) {
 
-            const SizedBox(
-                height: 8),
+                  return FadeTransition(
+                    opacity: animation,
 
-            Row(
-              children:
-                  List.generate(
-                5,
-                (i) {
+                    child: SlideTransition(
+                      position: Tween(
+                        begin:
+                            const Offset(
+                                0.02, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
 
-                  final valor =
-                      i + 1;
+                      child: child,
+                    ),
+                  );
+                },
 
-                  Color cor;
+                child: Column(
+                  key: ValueKey(
+                    animal.id,
+                  ),
 
-                  switch (
-                      valor) {
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
 
-                    case 1:
-                      cor = Colors
-                          .red
-                          .shade900;
-                      break;
+                  children: [
 
-                    case 2:
-                      cor =
-                          Colors
-                              .red;
-                      break;
+                    CurralHeader(
+                      indexAtual:
+                          indexAtual,
 
-                    case 3:
-                      cor = Colors
-                          .pink
-                          .shade200;
-                      break;
+                      total:
+                          lista.length,
+                    ),
 
-                    case 4:
-                      cor = Colors
-                          .pink
-                          .shade50;
-                      break;
+                    const SizedBox(
+                        height: 16),
 
-                    default:
-                      cor =
-                          Colors
-                              .white;
-                  }
+                    CurralAnimalCard(
+                      animal: animal,
 
-                  final selecionado =
-                      manejoAtual
-                              .famacha ==
-                          valor;
+                      statusCor:
+                          statusCor,
 
-                  return Expanded(
-                    child:
-                        GestureDetector(
-                      onTap:
-                          () {
+                      statusTexto:
+                          textoStatus(
+                        combinado,
+                      ),
+
+                      dataPesagem:
+                          dataUltimaPesagem(
+                        animal,
+                      ),
+
+                      peso:
+                          combinado.peso,
+
+                      ecc:
+                          combinado.ecc,
+                    ),
+
+                    const SizedBox(
+                        height: 18),
+
+                    FamachaSelector(
+                      valorAtual:
+                          manejoAtual.famacha,
+
+                      onSelecionar:
+                          (valor) {
 
                         setState(() {
 
@@ -690,363 +658,251 @@ class _CurralScreenState
                               true;
                         });
                       },
+                    ),
 
-                      child:
-                          Container(
-                        margin:
-                            const EdgeInsets.symmetric(
-                          horizontal:
-                              4,
-                        ),
+                    const SizedBox(
+                        height: 16),
 
-                        padding:
-                            const EdgeInsets.all(
-                                12),
+                    const Text(
+                      "ECC",
 
-                        decoration:
-                            BoxDecoration(
-                          color:
-                              cor,
-
-                          borderRadius:
-                              BorderRadius.circular(
-                                  8),
-
-                          border:
-                              Border.all(
-                            color: selecionado
-                                ? Colors.black
-                                : Colors.grey,
-
-                            width:
-                                selecionado
-                                    ? 2
-                                    : 1,
-                          ),
-                        ),
-
-                        child:
-                            Center(
-                          child:
-                              Text(
-                            valor
-                                .toString(),
-
-                            style:
-                                TextStyle(
-                              color: valor >= 4
-                                  ? Colors.black
-                                  : Colors.white,
-
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      style: TextStyle(
+                        fontWeight:
+                            FontWeight.w700,
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
 
-            const SizedBox(
-                height: 20),
+                    const SizedBox(
+                        height: 10),
 
-            /// ECC
-            const Text("ECC"),
+                    Row(
+                      children:
+                          List.generate(5,
+                              (i) {
 
-            Row(
-              children:
-                  List.generate(
-                5,
-                (i) {
+                        final valor =
+                            i + 1;
 
-                  final valor =
-                      i + 1;
+                        Color cor;
+                        String label;
 
-                  Color cor;
+                        switch (
+                            valor) {
 
-                  String label;
+                          case 1:
+                            cor = Colors
+                                .red
+                                .shade300;
+                            label =
+                                "M.magro";
+                            break;
 
-                  String icone;
+                          case 2:
+                            cor = Colors
+                                .orange
+                                .shade300;
+                            label =
+                                "Magro";
+                            break;
 
-                  switch (
-                      valor) {
+                          case 3:
+                            cor = Colors
+                                .green
+                                .shade300;
+                            label =
+                                "Ideal";
+                            break;
 
-                    case 1:
-                      cor = Colors
-                          .red
-                          .shade900;
-                      label =
-                          "M.magro";
-                      icone =
-                          "⬇";
-                      break;
+                          case 4:
+                            cor = Colors
+                                .amber
+                                .shade300;
+                            label =
+                                "Gordo";
+                            break;
 
-                    case 2:
-                      cor = Colors
-                          .orange;
-                      label =
-                          "Magro";
-                      icone =
-                          "↘";
-                      break;
+                          default:
+                            cor = Colors
+                                .purple
+                                .shade200;
+                            label =
+                                "M.gordo";
+                        }
 
-                    case 3:
-                      cor = Colors
-                          .green;
-                      label =
-                          "Ideal";
-                      icone =
-                          "✔";
-                      break;
+                        final selecionado =
+                            manejoAtual
+                                    .ecc ==
+                                valor;
 
-                    case 4:
-                      cor = Colors
-                          .yellow
-                          .shade700;
-                      label =
-                          "Gordo";
-                      icone =
-                          "↗";
-                      break;
+                        return Expanded(
+                          child:
+                              GestureDetector(
+                            onTap: () {
 
-                    default:
-                      cor = Colors
-                          .purple;
-                      label =
-                          "M.gordo";
-                      icone =
-                          "⬆";
-                  }
+                              setState(() {
 
-                  final selecionado =
-                      manejoAtual
-                              .ecc ==
-                          valor;
+                                manejoAtual
+                                        .ecc =
+                                    valor;
 
-                  return Expanded(
-                    child:
-                        GestureDetector(
-                      onTap:
-                          () {
+                                manejoAtual
+                                        .alterado =
+                                    true;
+                              });
+                            },
 
-                        setState(() {
-
-                          manejoAtual
-                                  .ecc =
-                              valor;
-
-                          manejoAtual
-                                  .alterado =
-                              true;
-                        });
-                      },
-
-                      child:
-                          AnimatedContainer(
-                        duration:
-                            const Duration(
-                          milliseconds:
-                              150,
-                        ),
-
-                        margin:
-                            const EdgeInsets.all(
-                                4),
-
-                        padding:
-                            const EdgeInsets.all(
-                                10),
-
-                        decoration:
-                            BoxDecoration(
-                          color: cor.withOpacity(
-                              selecionado
-                                  ? 0.85
-                                  : 0.3),
-
-                          borderRadius:
-                              BorderRadius.circular(
-                                  8),
-
-                          border: selecionado
-                              ? Border.all(
-                                  color:
-                                      Colors.black,
-
-                                  width:
-                                      2,
-                                )
-                              : null,
-                        ),
-
-                        child:
-                            Column(
-                          children: [
-
-                            Text(
-                              icone,
-
-                              style:
-                                  const TextStyle(
-                                fontSize:
-                                    16,
+                            child:
+                                AnimatedContainer(
+                              duration:
+                                  const Duration(
+                                milliseconds:
+                                    140,
                               ),
-                            ),
 
-                            Text(
-                              valor
-                                  .toString(),
-
-                              style:
-                                  const TextStyle(
-                                fontWeight:
-                                    FontWeight.bold,
+                              margin:
+                                  const EdgeInsets.symmetric(
+                                horizontal:
+                                    3,
                               ),
-                            ),
 
-                            Text(
-                              label,
-
-                              style:
-                                  const TextStyle(
-                                fontSize:
+                              padding:
+                                  const EdgeInsets.symmetric(
+                                vertical:
                                     10,
                               ),
 
-                              textAlign:
-                                  TextAlign.center,
+                              decoration:
+                                  BoxDecoration(
+                                color: cor.withOpacity(
+                                    selecionado
+                                        ? 0.9
+                                        : 0.45),
+
+                                borderRadius:
+                                    BorderRadius.circular(
+                                        14),
+
+                                border:
+                                    Border.all(
+                                  color: selecionado
+                                      ? Colors.black
+                                      : Colors.transparent,
+
+                                  width: 2,
+                                ),
+                              ),
+
+                              child:
+                                  Column(
+                                children: [
+
+                                  Text(
+                                    valor
+                                        .toString(),
+
+                                    style:
+                                        const TextStyle(
+                                      fontWeight:
+                                          FontWeight.bold,
+
+                                      fontSize:
+                                          15,
+                                    ),
+                                  ),
+
+                                  const SizedBox(
+                                      height:
+                                          2),
+
+                                  Text(
+                                    label,
+
+                                    style:
+                                        const TextStyle(
+                                      fontSize:
+                                          9,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      }),
                     ),
-                  );
-                },
+
+                    const SizedBox(
+                        height: 18),
+
+                    PesoInput(
+                      controller:
+                          pesoController,
+
+                      onChanged: (v) {
+
+                        final m =
+                            getAtual(
+                                animal);
+
+                        m.peso =
+                            double.tryParse(
+                                v);
+
+                        m.alterado =
+                            true;
+
+                        if (_debounce
+                                ?.isActive ??
+                            false) {
+
+                          _debounce!
+                              .cancel();
+                        }
+
+                        _debounce = Timer(
+                          const Duration(
+                            milliseconds:
+                                800,
+                          ),
+
+                          () async {
+
+                            if (m.peso !=
+                                    null &&
+                                m.peso !=
+                                    animal
+                                        .peso) {
+
+                              await salvarParcial(
+                                animal,
+                                m,
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
+
+                    const Spacer(),
+
+                    const SizedBox(
+                        height: 20),
+
+                    CurralActions(
+                      onVoltar:
+                          voltarAnimal,
+
+                      onPular:
+                          pularAnimal,
+
+                      onProximo:
+                          proximoAnimal,
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(
-                height: 20),
-
-            /// PESO
-            TextField(
-              controller:
-                  pesoController,
-
-              keyboardType:
-                  TextInputType
-                      .number,
-
-              decoration:
-                  const InputDecoration(
-                labelText:
-                    "Peso (kg)",
-
-                border:
-                    OutlineInputBorder(),
-              ),
-
-              onChanged: (v) {
-
-                final m =
-                    getAtual(
-                        animal);
-
-                m.peso =
-                    double.tryParse(
-                        v);
-
-                m.alterado =
-                    true;
-
-                if (_debounce
-                        ?.isActive ??
-                    false) {
-
-                  _debounce!
-                      .cancel();
-                }
-
-                _debounce = Timer(
-                  const Duration(
-                    milliseconds:
-                        800,
-                  ),
-
-                  () async {
-
-                    if (m.peso !=
-                            null &&
-                        m.peso !=
-                            animal
-                                .peso) {
-
-                      await salvarParcial(
-                        animal,
-                        m,
-                      );
-                    }
-                  },
-                );
-              },
-            ),
-
-            const Spacer(),
-
-            /// BOTÕES
-            Row(
-              children: [
-
-                Expanded(
-                  child:
-                      OutlinedButton(
-                    onPressed:
-                        voltarAnimal,
-
-                    child:
-                        const Text(
-                      "Voltar",
-                    ),
-                  ),
-                ),
-
-                const SizedBox(
-                    width: 8),
-
-                Expanded(
-                  child:
-                      OutlinedButton(
-                    onPressed:
-                        pularAnimal,
-
-                    child:
-                        const Text(
-                      "Pular",
-                    ),
-                  ),
-                ),
-
-                const SizedBox(
-                    width: 8),
-
-                Expanded(
-                  child:
-                      ElevatedButton(
-                    onPressed:
-                        proximoAnimal,
-
-                    child:
-                        const Text(
-                      "Próximo",
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

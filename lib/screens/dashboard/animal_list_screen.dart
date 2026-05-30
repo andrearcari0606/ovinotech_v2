@@ -4,14 +4,17 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../models/animal.dart';
 import '../../models/pesagem.dart';
+
 import '../../core/services/hive_service.dart';
 import '../../core/theme/app_colors.dart';
+
 import '../../services/analise_service.dart';
 import '../../services/pesagem_service.dart';
 
 import '../manejos/curral_screen.dart';
 
 class AnimalListScreen extends StatelessWidget {
+
   final String tipo;
 
   const AnimalListScreen({
@@ -21,151 +24,664 @@ class AnimalListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Scaffold(
+
       appBar: AppBar(
         title: Text(_titulo()),
       ),
-      body: ValueListenableBuilder<Box<Animal>>(
-        valueListenable: HiveService.animalBox.listenable(),
+
+      body:
+          ValueListenableBuilder<Box<Animal>>(
+
+        valueListenable:
+            HiveService.animalBox.listenable(),
+
         builder: (context, box, _) {
-          final animais = HiveService.getAnimaisAtivos();
 
-         final filtrados = animais.where((a) {
-          final resultado =
-          AnaliseService.analisarAnimalCompleto(a);
+          final animais =
+              HiveService.getAnimaisAtivos();
 
-          final status = resultado.status;
+          final filtrados =
+              animais.where((a) {
 
-          if (tipo == "todos") return true; // 🔥 ESSA LINHA RESOLVE
+            final resultado =
+                AnaliseService
+                    .analisarAnimalCompleto(
+              a,
+            );
 
-          if (tipo == "acao") return status == "vermelho";
-          if (tipo == "observacao") return status == "amarelo";
-          if (tipo == "saudavel") return status == "verde";
-          
+            final status =
+                resultado.status;
 
-          return false;
+            if (tipo == 'todos') {
+              return true;
+            }
+
+            if (tipo == 'acao') {
+              return status == 'vermelho';
+            }
+
+            if (tipo == 'observacao') {
+              return status == 'amarelo';
+            }
+
+            if (tipo == 'saudavel') {
+              return status == 'verde';
+            }
+
+            return false;
+
           }).toList();
 
           return Column(
             children: [
+
               Padding(
-                padding: const EdgeInsets.all(12),
+
+                padding:
+                    const EdgeInsets.all(
+                  16,
+                ),
+
                 child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.agriculture),
-                    label: Text(
-                      filtrados.isEmpty
-                          ? "Nenhum animal disponível"
-                          : "Iniciar manejo (${filtrados.length})",
+
+                  width:
+                      double.infinity,
+
+                  child:
+                      ElevatedButton.icon(
+
+                    icon: const Icon(
+                      Icons.agriculture,
                     ),
-                    onPressed: filtrados.isEmpty
-                        ? null
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CurralScreen(
-                                  animaisFiltrados: filtrados,
-                                ),
-                              ),
-                            );
-                          },
+
+                    label: Text(
+
+                      filtrados.isEmpty
+
+                          ? 'Nenhum animal disponível'
+
+                          : 'Iniciar manejo (${filtrados.length})',
+                    ),
+
+                    style:
+                        ElevatedButton.styleFrom(
+
+                      elevation: 0,
+
+                      backgroundColor:
+                          AppColors.primary,
+
+                      foregroundColor:
+                          Colors.white,
+
+                      padding:
+                          const EdgeInsets
+                              .symmetric(
+                        vertical: 16,
+                      ),
+
+                      shape:
+                          RoundedRectangleBorder(
+
+                        borderRadius:
+                            BorderRadius
+                                .circular(
+                          18,
+                        ),
+                      ),
+                    ),
+
+                    onPressed:
+                        filtrados.isEmpty
+
+                            ? null
+
+                            : () {
+
+                                Navigator.push(
+
+                                  context,
+
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        CurralScreen(
+                                      animaisFiltrados:
+                                          filtrados,
+                                    ),
+                                  ),
+                                );
+                              },
                   ),
                 ),
               ),
 
               Expanded(
-                child: ListView.builder(
-                  itemCount: filtrados.length,
-                  itemBuilder: (context, index) {
-                    final a = filtrados[index];
 
-                    final resultado =
-                        AnaliseService.analisarAnimalCompleto(a);
+                child: filtrados.isEmpty
 
-                    return ListTile(
-                      title: Text("Animal ${a.identificacao}"),
+                    ? _emptyState(isDark)
 
-                      subtitle: Builder(
-                        builder: (_) {
-                          final lista = PesagemService()
-                              .listarPorAnimal(a.id!);
+                    : ListView.builder(
 
-                          if (lista.length < 2) {
-                            return Text("Peso: ${a.peso} kg");
-                          }
+                        padding:
+                            const EdgeInsets
+                                .fromLTRB(
+                          16,
+                          0,
+                          16,
+                          120,
+                        ),
 
-                          lista.sort((a, b) =>
-                              b.data.compareTo(a.data));
+                        itemCount:
+                            filtrados.length,
 
-                          final atual = lista[0];
-                          final anterior = lista[1];
+                        itemBuilder:
+                            (context, index) {
 
-                          final diff =
-                              atual.peso - anterior.peso;
+                          final a =
+                              filtrados[index];
 
-                          final dias = atual.data
-                              .difference(anterior.data)
-                              .inDays;
+                          final resultado =
+                              AnaliseService
+                                  .analisarAnimalCompleto(
+                            a,
+                          );
 
-                          final gmd =
-                              dias > 0 ? diff / dias : 0;
+                          final lista =
+                              PesagemService()
+                                  .listarPorAnimal(
+                            a.id!,
+                          );
 
-                          Color cor;
-                          String msg;
+                          double gmd = 0;
 
-                          if (diff < 0) {
-                            cor = Colors.red;
-                            msg = "Perda";
-                          } else if (gmd < 0.05) {
-                            cor = Colors.orange;
-                            msg = "Baixo";
-                          } else {
-                            cor = Colors.green;
-                            msg = "Bom";
-                          }
+                          double diff = 0;
 
-                          return Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text("Peso: ${a.peso} kg"),
-                              Text(
-                                  "Δ ${diff.toStringAsFixed(1)} kg"),
+                          Color gmdColor =
+                              AppColors.success;
 
-                              Row(
-                                children: [
-                                  Text(
-                                    "GMD: ${gmd.toStringAsFixed(2)}",
-                                    style: TextStyle(
-                                        color: cor,
-                                        fontWeight:
-                                            FontWeight.bold),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(msg,
-                                      style:
-                                          TextStyle(color: cor)),
-                                ],
+                          String gmdLabel =
+                              'Bom';
+
+                          if (lista.length >= 2) {
+
+                            lista.sort(
+                              (a, b) =>
+                                  b.data.compareTo(
+                                a.data,
                               ),
-                            ],
+                            );
+
+                            final atual =
+                                lista[0];
+
+                            final anterior =
+                                lista[1];
+
+                            diff =
+                                atual.peso -
+                                    anterior
+                                        .peso;
+
+                            final dias =
+                                atual.data
+                                    .difference(
+                              anterior.data,
+                            ).inDays;
+
+                            gmd =
+                                dias > 0
+                                    ? diff /
+                                        dias
+                                    : 0;
+
+                            if (diff < 0) {
+
+                              gmdColor =
+                                  AppColors
+                                      .error;
+
+                              gmdLabel =
+                                  'Perda';
+
+                            } else if (gmd <
+                                0.05) {
+
+                              gmdColor =
+                                  AppColors
+                                      .warning;
+
+                              gmdLabel =
+                                  'Baixo';
+                            }
+                          }
+
+                          Color statusColor;
+
+                          String statusLabel;
+
+                          if (resultado
+                                  .status ==
+                              'verde') {
+
+                            statusColor =
+                                AppColors
+                                    .success;
+
+                            statusLabel =
+                                'Saudável';
+
+                          } else if (resultado
+                                  .status ==
+                              'amarelo') {
+
+                            statusColor =
+                                AppColors
+                                    .warning;
+
+                            statusLabel =
+                                'Atenção';
+
+                          } else {
+
+                            statusColor =
+                                AppColors
+                                    .error;
+
+                            statusLabel =
+                                'Crítico';
+                          }
+
+                          return Padding(
+
+                            padding:
+                                const EdgeInsets
+                                    .only(
+                              bottom: 14,
+                            ),
+
+                            child: Material(
+
+                              color: Colors
+                                  .transparent,
+
+                              child: InkWell(
+
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  26,
+                                ),
+
+                                onTap: () {
+
+                                  Navigator.push(
+
+                                    context,
+
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          AnimalDetailScreen(
+                                        animal:
+                                            a,
+                                      ),
+                                    ),
+                                  );
+                                },
+
+                                child:
+                                    Container(
+
+                                  padding:
+                                      const EdgeInsets
+                                          .all(
+                                    18,
+                                  ),
+
+                                  decoration:
+                                      BoxDecoration(
+
+                                    color: isDark
+
+                                        ? AppColors
+                                            .darkCard
+
+                                        : Colors
+                                            .white,
+
+                                    borderRadius:
+                                        BorderRadius
+                                            .circular(
+                                      26,
+                                    ),
+
+                                    border:
+                                        Border.all(
+
+                                      color:
+                                          isDark
+
+                                              ? AppColors
+                                                  .glassBorder
+
+                                              : Colors
+                                                  .black
+                                                  .withOpacity(
+                                                0.04,
+                                              ),
+                                    ),
+
+                                    boxShadow: [
+
+                                      BoxShadow(
+
+                                        color: Colors
+                                            .black
+                                            .withOpacity(
+                                          0.05,
+                                        ),
+
+                                        blurRadius:
+                                            22,
+
+                                        spreadRadius:
+                                            -4,
+
+                                        offset:
+                                            const Offset(
+                                          0,
+                                          12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  child: Column(
+
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment
+                                            .start,
+
+                                    children: [
+
+                                      Row(
+                                        children: [
+
+                                          Container(
+
+                                            padding:
+                                                const EdgeInsets
+                                                    .symmetric(
+                                              horizontal:
+                                                  12,
+                                              vertical:
+                                                  7,
+                                            ),
+
+                                            decoration:
+                                                BoxDecoration(
+
+                                              color:
+                                                  statusColor
+                                                      .withOpacity(
+                                                0.12,
+                                              ),
+
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                100,
+                                              ),
+                                            ),
+
+                                            child:
+                                                Text(
+                                              statusLabel,
+
+                                              style:
+                                                  TextStyle(
+                                                color:
+                                                    statusColor,
+
+                                                fontWeight:
+                                                    FontWeight.w700,
+
+                                                fontSize:
+                                                    12,
+                                              ),
+                                            ),
+                                          ),
+
+                                          const Spacer(),
+
+                                          Container(
+
+                                            padding:
+                                                const EdgeInsets
+                                                    .all(
+                                              10,
+                                            ),
+
+                                            decoration:
+                                                BoxDecoration(
+
+                                              color:
+                                                  AppColors
+                                                      .primary
+                                                      .withOpacity(
+                                                0.10,
+                                              ),
+
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                16,
+                                              ),
+                                            ),
+
+                                            child:
+                                                const Icon(
+                                              Icons
+                                                  .agriculture,
+
+                                              size:
+                                                  20,
+
+                                              color:
+                                                  AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(
+                                        height: 18,
+                                      ),
+
+                                      Text(
+                                        'Animal ${a.identificacao}',
+
+                                        style:
+                                            TextStyle(
+
+                                          fontSize:
+                                              20,
+
+                                          fontWeight:
+                                              FontWeight.w800,
+
+                                          color:
+                                              isDark
+
+                                                  ? AppColors.darkTextPrimary
+
+                                                  : AppColors.textPrimary,
+                                        ),
+                                      ),
+
+                                      const SizedBox(
+                                        height: 6,
+                                      ),
+
+                                      Text(
+                                        '${a.peso.toStringAsFixed(1)} kg',
+
+                                        style:
+                                            TextStyle(
+
+                                          fontSize:
+                                              15,
+
+                                          fontWeight:
+                                              FontWeight.w600,
+
+                                          color:
+                                              isDark
+
+                                                  ? AppColors.darkTextSecondary
+
+                                                  : AppColors.textSecondary,
+                                        ),
+                                      ),
+
+                                      const SizedBox(
+                                        height: 20,
+                                      ),
+
+                                      Row(
+                                        children: [
+
+                                          Expanded(
+                                            child:
+                                                _infoChip(
+                                              'Δ Peso',
+                                              '${diff.toStringAsFixed(1)} kg',
+                                              AppColors.primary,
+                                            ),
+                                          ),
+
+                                          const SizedBox(
+                                            width:
+                                                10,
+                                          ),
+
+                                          Expanded(
+                                            child:
+                                                _infoChip(
+                                              'GMD',
+
+                                              gmd ==
+                                                      0
+                                                  ? '--'
+                                                  : gmd.toStringAsFixed(
+                                                      2,
+                                                    ),
+
+                                              gmdColor,
+                                            ),
+                                          ),
+
+                                          const SizedBox(
+                                            width:
+                                                10,
+                                          ),
+
+                                          Expanded(
+                                            child:
+                                                _infoChip(
+                                              'Status',
+                                              gmdLabel,
+                                              gmdColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(
+                                        height: 20,
+                                      ),
+
+                                      SizedBox(
+
+                                        width:
+                                            double.infinity,
+
+                                        child:
+                                            ElevatedButton
+                                                .icon(
+
+                                          icon:
+                                              const Icon(
+                                            Icons
+                                                .agriculture,
+                                          ),
+
+                                          label:
+                                              const Text(
+                                            'Ir para Curral',
+                                          ),
+
+                                          style:
+                                              ElevatedButton.styleFrom(
+
+                                            elevation:
+                                                0,
+
+                                            backgroundColor:
+                                                AppColors.primary,
+
+                                            foregroundColor:
+                                                Colors.white,
+
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                              vertical:
+                                                  14,
+                                            ),
+
+                                            shape:
+                                                RoundedRectangleBorder(
+
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                18,
+                                              ),
+                                            ),
+                                          ),
+
+                                          onPressed:
+                                              () {
+
+                                            Navigator.push(
+
+                                              context,
+
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    CurralScreen(
+                                                  animaisFiltrados: [
+                                                    a,
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           );
                         },
                       ),
-
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AnimalDetailScreen(animal: a),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
               ),
             ],
           );
@@ -174,192 +690,342 @@ class AnimalListScreen extends StatelessWidget {
     );
   }
 
+  Widget _emptyState(
+    bool isDark,
+  ) {
+
+    return Center(
+
+      child: Padding(
+
+        padding:
+            const EdgeInsets.all(
+          32,
+        ),
+
+        child: Column(
+
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+
+          children: [
+
+            Container(
+
+              padding:
+                  const EdgeInsets.all(
+                24,
+              ),
+
+              decoration:
+                  BoxDecoration(
+
+                color: AppColors.primary
+                    .withOpacity(
+                  0.08,
+                ),
+
+                shape: BoxShape.circle,
+              ),
+
+              child: const Icon(
+                Icons.agriculture,
+
+                size: 42,
+
+                color: AppColors.primary,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Nenhum animal encontrado',
+
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight:
+                    FontWeight.w800,
+
+                color: isDark
+
+                    ? AppColors
+                        .darkTextPrimary
+
+                    : AppColors
+                        .textPrimary,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Text(
+              'Os animais aparecerão aqui conforme o filtro selecionado.',
+
+              textAlign:
+                  TextAlign.center,
+
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+
+                color: isDark
+
+                    ? AppColors
+                        .darkTextSecondary
+
+                    : AppColors
+                        .textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoChip(
+    String titulo,
+    String valor,
+    Color cor,
+  ) {
+
+    return Container(
+
+      padding:
+          const EdgeInsets.symmetric(
+        vertical: 12,
+        horizontal: 10,
+      ),
+
+      decoration: BoxDecoration(
+
+        color:
+            cor.withOpacity(0.10),
+
+        borderRadius:
+            BorderRadius.circular(
+          16,
+        ),
+      ),
+
+      child: Column(
+        children: [
+
+          Text(
+            titulo,
+
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight:
+                  FontWeight.w600,
+
+              color:
+                  cor.withOpacity(
+                0.80,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            valor,
+
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight:
+                  FontWeight.w800,
+              color: cor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _titulo() {
-    return "Animais";
+
+    if (tipo == 'acao') {
+      return 'Animais Críticos';
+    }
+
+    if (tipo == 'observacao') {
+      return 'Animais em Atenção';
+    }
+
+    if (tipo == 'saudavel') {
+      return 'Animais Saudáveis';
+    }
+
+    return 'Animais';
   }
 }
 
 class AnimalDetailScreen extends StatelessWidget {
+
   final Animal animal;
 
-  const AnimalDetailScreen({super.key, required this.animal});
+  const AnimalDetailScreen({
+    super.key,
+    required this.animal,
+  });
 
   Widget buildGrafico() {
-    final lista = PesagemService().listarPorAnimal(animal.id!);
+
+    final lista =
+        PesagemService()
+            .listarPorAnimal(
+      animal.id!,
+    );
 
     if (lista.length < 2) {
-      return const Text("Sem dados para gráfico");
+
+      return Container(
+
+        height: 220,
+
+        alignment:
+            Alignment.center,
+
+        child: const Text(
+          'Sem dados suficientes para gráfico',
+        ),
+      );
     }
 
-    lista.sort((a, b) => a.data.compareTo(b.data));
+    lista.sort(
+      (a, b) =>
+          a.data.compareTo(
+        b.data,
+      ),
+    );
 
-    final spotsAnimal = <FlSpot>[];
+    final spots =
+        <FlSpot>[];
 
-    for (int i = 0; i < lista.length; i++) {
-      spotsAnimal.add(FlSpot(i.toDouble(), lista[i].peso));
+    for (int i = 0;
+        i < lista.length;
+        i++) {
+
+      spots.add(
+        FlSpot(
+          i.toDouble(),
+          lista[i].peso,
+        ),
+      );
     }
-
-    // 🔥 MÉDIA DO LOTE
-    final todosAnimais = HiveService.animalBox.values
-      .where((a) => a.ativo)
-      .toList();
-    final spotsMedia = <FlSpot>[];
-
-    for (int i = 0; i < lista.length; i++) {
-      final dataRef = lista[i].data;
-
-      List<double> pesosMesmoDia = [];
-
-      for (var a in todosAnimais) {
-        final pesagens = PesagemService().listarPorAnimal(a.id!);
-
-        Pesagem? maisProxima;
-        int? menorDiferenca;
-
-        for (var p in pesagens) {
-        final diff = (p.data.difference(dataRef).inDays).abs();
-
-        // 🔥 LIMITE DE DIAS (IMPORTANTE)
-        if (diff <= 7) {
-        if (menorDiferenca == null || diff < menorDiferenca) {
-        menorDiferenca = diff;
-        maisProxima = p;
-           }
-          }
-         }
-
-        if (maisProxima != null) {
-         pesosMesmoDia.add(maisProxima.peso);
-        }
-
-        if (maisProxima != null) {
-        pesosMesmoDia.add(maisProxima.peso);
-         }
-        }
-
-        if (pesosMesmoDia.isNotEmpty) {
-        final media =
-            pesosMesmoDia.reduce((a, b) => a + b) /
-                pesosMesmoDia.length;
-
-        spotsMedia.add(FlSpot(i.toDouble(), media));
-      }
-    }
-
-    final corLinha =
-    lista.last.peso >= lista.first.peso
-        ? Colors.green
-        : Colors.red;
 
     return SizedBox(
-      height: 250,
+
+      height: 260,
+
       child: LineChart(
+
         LineChartData(
-          minX: 0,
-          maxX: (lista.length - 1).toDouble(),
 
-          minY: [
-            ...lista.map((e) => e.peso),
-            ...spotsMedia.map((e) => e.y)
-          ].reduce((a, b) => a < b ? a : b) -
-              2,
-
-          maxY: [
-            ...lista.map((e) => e.peso),
-            ...spotsMedia.map((e) => e.y)
-          ].reduce((a, b) => a > b ? a : b) +
-              2,
-
-          gridData: FlGridData(show: true, drawVerticalLine: false),
-
-          borderData: FlBorderData(
+          gridData:
+              FlGridData(
             show: true,
-            border: Border.all(color: Colors.grey.shade300),
+            drawVerticalLine: false,
           ),
 
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
+          borderData:
+              FlBorderData(
+            show: false,
+          ),
 
-                  if (index < 0 || index >= lista.length) {
-                    return const SizedBox();
-                  }
-
-                  final data = lista[index].data;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      "${data.day}/${data.month}",
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 10,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    value.toInt().toString(),
-                    style: const TextStyle(fontSize: 10),
-                  );
-                },
-              ),
-            ),
+          titlesData:
+              FlTitlesData(
 
             topTitles:
-            AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                AxisTitles(
+              sideTitles:
+                  SideTitles(
+                showTitles:
+                    false,
+              ),
+            ),
+
             rightTitles:
-            AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                AxisTitles(
+              sideTitles:
+                  SideTitles(
+                showTitles:
+                    false,
+              ),
+            ),
           ),
 
           lineBarsData: [
 
-            /// 🔵 MÉDIA DO LOTE
             LineChartBarData(
-              spots: spotsMedia,
-              isCurved: true,
-              color: Colors.blue,
-              barWidth: 3,
-              dotData: FlDotData(show: false),
-            ),
 
-            /// 🟢 ANIMAL
-            LineChartBarData(
-              spots: spotsAnimal,
+              spots: spots,
+
               isCurved: true,
-              curveSmoothness: 0.3,
+
+              curveSmoothness:
+                  0.35,
+
+              color:
+                  AppColors.primary,
+
               barWidth: 4,
-              color: corLinha,
-              dotData: FlDotData(show: true),
-              belowBarData: BarAreaData(
+
+              dotData:
+                  FlDotData(
                 show: true,
-                color: corLinha.withOpacity(0.2),
+              ),
+
+              belowBarData:
+                  BarAreaData(
+
+                show: true,
+
+                color:
+                    AppColors.primary
+                        .withOpacity(
+                  0.12,
+                ),
               ),
             ),
           ],
 
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: Colors.black87,
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((spot) {
-                  final index = spot.x.toInt();
-                  final item = lista[index];
+          lineTouchData:
+              LineTouchData(
 
-                  return LineTooltipItem(
-                    "${item.peso.toStringAsFixed(1)} kg\n${item.data.day}/${item.data.month}/${item.data.year}",
-                    const TextStyle(color: Colors.white),
-                  );
-                }).toList();
+            touchTooltipData:
+                LineTouchTooltipData(
+
+              getTooltipColor:
+                  (_) =>
+                      Colors.black87,
+
+              getTooltipItems:
+                  (spots) {
+
+                return spots.map(
+                  (spot) {
+
+                    final item =
+                        lista[
+                            spot.x
+                                .toInt()];
+
+                    return LineTooltipItem(
+
+                      '${item.peso.toStringAsFixed(1)} kg',
+
+                      const TextStyle(
+                        color:
+                            Colors.white,
+                        fontWeight:
+                            FontWeight.w700,
+                      ),
+                    );
+                  },
+                ).toList();
               },
             ),
           ),
@@ -370,110 +1036,621 @@ class AnimalDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final isDark =
+        Theme.of(context)
+                .brightness ==
+            Brightness.dark;
+
     final resultado =
-        AnaliseService.analisarAnimalCompleto(animal);
+        AnaliseService
+            .analisarAnimalCompleto(
+      animal,
+    );
+
+    Color statusColor;
+
+    String statusLabel;
+
+    if (resultado.status ==
+        'verde') {
+
+      statusColor =
+          AppColors.success;
+
+      statusLabel =
+          'Saudável';
+
+    } else if (resultado
+            .status ==
+        'amarelo') {
+
+      statusColor =
+          AppColors.warning;
+
+      statusLabel =
+          'Atenção';
+
+    } else {
+
+      statusColor =
+          AppColors.error;
+
+      statusLabel =
+          'Crítico';
+    }
 
     return Scaffold(
+
       appBar: AppBar(
-        title: Text("Animal ${animal.identificacao}"),
+
+        title: Text(
+          'Animal ${animal.identificacao}',
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-            child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
 
-              Text(
-                "Peso: ${animal.peso.toStringAsFixed(1)} kg",
-                style: const TextStyle(fontSize: 18),
+      body: SingleChildScrollView(
+
+        padding:
+            const EdgeInsets.all(
+          20,
+        ),
+
+        child: Column(
+
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
+          children: [
+
+            Container(
+
+              padding:
+                  const EdgeInsets
+                      .all(22),
+
+              decoration:
+                  BoxDecoration(
+
+                color: isDark
+
+                    ? AppColors
+                        .darkCard
+
+                    : Colors.white,
+
+                borderRadius:
+                    BorderRadius
+                        .circular(
+                  28,
+                ),
+
+                boxShadow: [
+
+                  BoxShadow(
+
+                    color: Colors.black
+                        .withOpacity(
+                      0.05,
+                    ),
+
+                    blurRadius: 22,
+
+                    spreadRadius:
+                        -4,
+
+                    offset:
+                        const Offset(
+                      0,
+                      12,
+                    ),
+                  ),
+                ],
               ),
 
-              const SizedBox(height: 8),
+              child: Column(
 
-              Text(
-                "Status: ${resultado.status}",
-                style: const TextStyle(fontSize: 18),
-              ),
+                crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
 
-              const SizedBox(height: 20),
+                children: [
 
-              buildGrafico(),
+                  Row(
+                    children: [
 
-              const SizedBox(height: 20),
+                      Container(
 
-              const Text(
-                "Problemas identificados:",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+                        padding:
+                            const EdgeInsets
+                                .symmetric(
+                          horizontal:
+                              14,
+                          vertical:
+                              8,
+                        ),
 
-              ...resultado.problemas.map(
-                (p) => Text("- ${p.mensagem}"),
-              ),
+                        decoration:
+                            BoxDecoration(
 
-              const SizedBox(height: 20),
+                          color:
+                              statusColor
+                                  .withOpacity(
+                            0.12,
+                          ),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.agriculture),
-                  label: const Text("Ir para o curral (animal)"),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CurralScreen(
-                          animaisFiltrados: [animal],
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            100,
+                          ),
+                        ),
+
+                        child: Text(
+                          statusLabel,
+
+                          style:
+                              TextStyle(
+                            color:
+                                statusColor,
+
+                            fontWeight:
+                                FontWeight
+                                    .w700,
+                          ),
                         ),
                       ),
-                    );
-                  },
+
+                      const Spacer(),
+
+                      Container(
+
+                        padding:
+                            const EdgeInsets
+                                .all(14),
+
+                        decoration:
+                            BoxDecoration(
+
+                          color: AppColors
+                              .primary
+                              .withOpacity(
+                            0.10,
+                          ),
+
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            18,
+                          ),
+                        ),
+
+                        child: const Icon(
+                          Icons.agriculture,
+
+                          color:
+                              AppColors
+                                  .primary,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(
+                    height: 24,
+                  ),
+
+                  Text(
+                    'Peso Atual',
+
+                    style: TextStyle(
+                      fontSize: 14,
+
+                      color: isDark
+
+                          ? AppColors
+                              .darkTextSecondary
+
+                          : AppColors
+                              .textSecondary,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 6,
+                  ),
+
+                  Text(
+                    '${animal.peso.toStringAsFixed(1)} kg',
+
+                    style: TextStyle(
+
+                      fontSize: 36,
+
+                      fontWeight:
+                          FontWeight
+                              .w800,
+
+                      color: isDark
+
+                          ? AppColors
+                              .darkTextPrimary
+
+                          : AppColors
+                              .textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(
+              height: 26,
+            ),
+
+            Container(
+
+              padding:
+                  const EdgeInsets
+                      .all(20),
+
+              decoration:
+                  BoxDecoration(
+
+                color: isDark
+
+                    ? AppColors
+                        .darkCard
+
+                    : Colors.white,
+
+                borderRadius:
+                    BorderRadius
+                        .circular(
+                  28,
                 ),
               ),
-                            const SizedBox(height: 16),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.pause_circle),
-                  label: const Text("Inativar animal"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+              child: Column(
+
+                crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
+
+                children: [
+
+                  Text(
+                    'Desempenho',
+
+                    style: TextStyle(
+
+                      fontSize: 20,
+
+                      fontWeight:
+                          FontWeight
+                              .w800,
+
+                      color: isDark
+
+                          ? AppColors
+                              .darkTextPrimary
+
+                          : AppColors
+                              .textPrimary,
+                    ),
                   ),
-                  onPressed: () async {
-                    final confirmar = await showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text("Inativar animal"),
-                        content: const Text(
-                          "Deseja inativar este animal?\n\nEle será removido das análises, mas o histórico será mantido.",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context, false),
-                            child: const Text("Cancelar"),
+
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  buildGrafico(),
+                ],
+              ),
+            ),
+
+            const SizedBox(
+              height: 26,
+            ),
+
+            if (resultado
+                .problemas
+                .isNotEmpty)
+
+              Container(
+
+                padding:
+                    const EdgeInsets
+                        .all(20),
+
+                decoration:
+                    BoxDecoration(
+
+                  color: isDark
+
+                      ? AppColors
+                          .darkCard
+
+                      : Colors.white,
+
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    28,
+                  ),
+                ),
+
+                child: Column(
+
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+
+                  children: [
+
+                    Text(
+                      'Problemas detectados',
+
+                      style:
+                          TextStyle(
+
+                        fontSize: 20,
+
+                        fontWeight:
+                            FontWeight
+                                .w800,
+
+                        color:
+                            isDark
+
+                                ? AppColors
+                                    .darkTextPrimary
+
+                                : AppColors
+                                    .textPrimary,
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 18,
+                    ),
+
+                    ...resultado
+                        .problemas
+                        .map(
+
+                      (p) {
+
+                        return Padding(
+
+                          padding:
+                              const EdgeInsets
+                                  .only(
+                            bottom:
+                                12,
                           ),
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(context, true),
-                            child: const Text("Inativar"),
+
+                          child: Row(
+                            children: [
+
+                              Icon(
+                                Icons.warning_amber_rounded,
+
+                                color:
+                                    statusColor,
+                              ),
+
+                              const SizedBox(
+                                width:
+                                    12,
+                              ),
+
+                              Expanded(
+                                child:
+                                    Text(
+                                  p.mensagem,
+                                ),
+                              ),
+                            ],
                           ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(
+              height: 30,
+            ),
+
+            SizedBox(
+
+              width:
+                  double.infinity,
+
+              child:
+                  ElevatedButton.icon(
+
+                icon: const Icon(
+                  Icons.agriculture,
+                ),
+
+                label: const Text(
+                  'Ir para o Curral',
+                ),
+
+                style:
+                    ElevatedButton.styleFrom(
+
+                  elevation: 0,
+
+                  backgroundColor:
+                      AppColors.primary,
+
+                  foregroundColor:
+                      Colors.white,
+
+                  padding:
+                      const EdgeInsets
+                          .symmetric(
+                    vertical: 18,
+                  ),
+
+                  shape:
+                      RoundedRectangleBorder(
+
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                      22,
+                    ),
+                  ),
+                ),
+
+                onPressed: () {
+
+                  Navigator.push(
+
+                    context,
+
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CurralScreen(
+                        animaisFiltrados: [
+                          animal,
                         ],
                       ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(
+              height: 14,
+            ),
+
+            SizedBox(
+
+              width:
+                  double.infinity,
+
+              child:
+                  ElevatedButton.icon(
+
+                icon: const Icon(
+                  Icons.pause_circle,
+                ),
+
+                label: const Text(
+                  'Inativar Animal',
+                ),
+
+                style:
+                    ElevatedButton.styleFrom(
+
+                  elevation: 0,
+
+                  backgroundColor:
+                      Colors.orange,
+
+                  foregroundColor:
+                      Colors.white,
+
+                  padding:
+                      const EdgeInsets
+                          .symmetric(
+                    vertical: 18,
+                  ),
+
+                  shape:
+                      RoundedRectangleBorder(
+
+                    borderRadius:
+                        BorderRadius
+                            .circular(
+                      22,
+                    ),
+                  ),
+                ),
+
+                onPressed: () async {
+
+                  final confirmar =
+                      await showDialog(
+
+                    context: context,
+
+                    builder: (_) =>
+                        AlertDialog(
+
+                      title: const Text(
+                        'Inativar animal',
+                      ),
+
+                      content:
+                          const Text(
+                        'Deseja realmente inativar este animal?',
+                      ),
+
+                      actions: [
+
+                        TextButton(
+
+                          onPressed:
+                              () {
+
+                            Navigator.pop(
+                              context,
+                              false,
+                            );
+                          },
+
+                          child: const Text(
+                            'Cancelar',
+                          ),
+                        ),
+
+                        TextButton(
+
+                          onPressed:
+                              () {
+
+                            Navigator.pop(
+                              context,
+                              true,
+                            );
+                          },
+
+                          child: const Text(
+                            'Inativar',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmar ==
+                      true) {
+
+                    await HiveService
+                        .inativarAnimal(
+                      animal.id!,
                     );
 
-                    if (confirmar == true) {
-                      await HiveService.inativarAnimal(animal.id!);
-
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
+                    Navigator.pop(
+                      context,
+                    );
+                  }
+                },
               ),
-             
-            ],
-          ),
+            ),
+
+            const SizedBox(
+              height: 40,
+            ),
+          ],
         ),
       ),
     );
